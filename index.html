@@ -1,0 +1,45 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="chrome=1">
+		<title>BinBin</title>
+		<link rel="icon" href="./favicon.ico">
+		<link rel="stylesheet" href="./main.css">
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	</head>
+	<body>
+		<header>
+			<i class="fa fa-arrow-left" aria-hidden="true"></i>
+			<h1 class="title">BinBin</h1>
+		</header>
+		<div class="under">
+			<div class="sidebar">
+				<div class="selections">
+					<h1 class="option">Starred</h1>
+					<h1 class="option">Recent</h1>
+				</div>
+			</div>
+			<div class="space"></div>
+			<div class="main">
+			<table class="dettbl">
+				<tr class="dettr">
+					<td class="dettd name">Name</td>
+					<td class="dettd modified">Last Modified</td>
+					<td class="dettd size">File Size</td>
+				</tr>
+			</table>
+				<div class="content">
+				</div>
+			</div>
+			<div class="infobar">
+				<form> Permalink:<br>
+					<input type="text" id="permalink" readonly>
+				</form>
+				<i class="fa fa-download" aria-hidden="true"></i>
+			</div>
+		</div>
+	</body>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="main.js"></script>
+</html>

@@ -1,2 +1,2 @@
-# binbin
+# BinBin
 Simple Database Website
