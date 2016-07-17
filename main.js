@@ -69,6 +69,7 @@ function dispDir() {
 						clearTbl();
 						currDir += name+"/";
 						listDir(currDir,0);
+						return;
 					} else if(attr == "mkv" || attr == "mp4") {
 						videoOverlay(url);
 					} else if(attr == "png" || attr == "jpg" || attr == "gif") {
@@ -217,6 +218,8 @@ function downloadFile(url,u) {
 }
 
 function clearTbl() {
+	selected = undefined;
+	selectDiv = undefined;
 	try{
 		table = document.getElementsByClassName("items")[0];
 		table.style.opacity = "0";
@@ -263,11 +266,28 @@ document.getElementById("permalink").onclick = function() {
 }
 
 document.addEventListener("keydown", function(event) {
-	if((event || window.event).keyCode === 13) {
+	if((event || window.event).keyCode === 13) { // Enter
 		try {
 			selectDiv.click();
 		} catch(err) {}
-        
+
+    } else if((event || window.event).keyCode === 38) { // Up
+		try {
+			selectDiv.previousElementSibling.click();
+		} catch(err) {}
+
+    } else if((event || window.event).keyCode === 40) { // Down
+		try {
+			if(selectDiv == undefined) {
+				document.getElementsByClassName("items")[0].childNodes[0].click();
+			} else {
+				selectDiv.nextElementSibling.click();
+			}
+		} catch(err) {} 
+    } else if((event || window.event).keyCode === 37) {
+    	try{
+    		document.getElementsByClassName("fa-arrow-left")[0].click();
+    	} catch(err) {}
     }
 })
 
