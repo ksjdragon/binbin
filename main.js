@@ -1,6 +1,7 @@
 var data;
 var section = 0;
 var selected;
+var selectDiv;
 var rootDir;
 var currDir = "";
 var clickable = true;
@@ -40,7 +41,7 @@ function dispDir() {
 		item = getRow();
 
 		var curr = data[0][i];
-		var name = document.createTextNode(curr)
+		var name = document.createTextNode(curr);
 		var modified = document.createTextNode(data[2][i]);
 		var size = document.createTextNode(data[3][i]);
 
@@ -74,9 +75,11 @@ function dispDir() {
 						imageOverlay(url); 
 					} else {
 						downloadFile(rootDir+currDir+name,'n');
+						clickable = true;
 					}
 				}
 				selected = name;
+				selectDiv = this;
 				for(var i =0; i< document.getElementsByTagName("tr").length;i++){
 					document.getElementsByTagName("tr")[i].style.backgroundColor = "";
 				}
@@ -183,7 +186,7 @@ function videoOverlay(url) {
 	video.autoplay = true;
 	video.type = "video/mp4";
 
-	document.addEventListener("keydown", function(event){
+	document.addEventListener("keydown", function(event) {
 	    if((event || window.event).keyCode === 32) {
 	        video.paused ? video.play() : video.pause();
 	    }
@@ -258,6 +261,15 @@ document.getElementById("permalink").onclick = function() {
 	this.select();
 	document.execCommand("copy");
 }
+
+document.addEventListener("keydown", function(event) {
+	if((event || window.event).keyCode === 13) {
+		try {
+			selectDiv.click();
+		} catch(err) {}
+        
+    }
+})
 
 $.when($.ajax({
 	type : 'POST',
