@@ -31,11 +31,11 @@ function listDir(dir,sec) {
 }
 
 function dispDir() {
-	selected = "";
 	var tbl = document.createElement("table");
 	tbl.className = "items";
 	tbl.style.opacity = "0";
 
+	selected = "";
 	var item;
 	for(var i = 0; i < data[0].length; i++) {
 		item = getRow();
@@ -67,8 +67,11 @@ function dispDir() {
 					attr = this.getAttribute("ext");
 					if(attr == "fol") {
 						clearTbl();
-						currDir += name+"/";
-						listDir(currDir,0);
+						setTimeout(function() {
+							document.getElementsByClassName("content")[0].removeChild(table);
+							currDir += name+"/";
+							listDir(currDir,0);
+						})
 						return;
 					} else if(attr == "mkv" || attr == "mp4") {
 						videoOverlay(url);
@@ -220,20 +223,19 @@ function downloadFile(url,u) {
 function clearTbl() {
 	selected = undefined;
 	selectDiv = undefined;
-	try{
-		table = document.getElementsByClassName("items")[0];
-		table.style.opacity = "0";
-		document.getElementById("permalink").value = "";
-		setTimeout(function() {
-			document.getElementsByClassName("content")[0].removeChild(table);
-		}, 300)
-	} catch(err) {}
+	table = document.getElementsByClassName("items")[0];
+	table.style.opacity = "0";
+	console.log(table.childNodes.length);
+	document.getElementById("permalink").value = "";
 }
 
 document.getElementsByClassName("fa-arrow-left")[0].onclick = function() {
 	clearTbl();
-	currDir = currDir.substring(0,currDir.substring(0,currDir.length-1).lastIndexOf("/")+1);
-	listDir(currDir,0);
+	setTimeout(function() {
+		document.getElementsByClassName("content")[0].removeChild(table);
+		currDir = currDir.substring(0,currDir.substring(0,currDir.length-1).lastIndexOf("/")+1);
+		listDir(currDir,0);
+	}, 300)
 }
 
 document.getElementsByClassName("fa-download")[0].onclick = function() {
