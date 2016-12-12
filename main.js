@@ -78,7 +78,7 @@ function dispDir() {
 					} else if(attr == "png" || attr == "jpg" || attr == "gif") {
 						imageOverlay(url); 
 					} else {
-						downloadFile(rootDir+currDir+name,'n');
+						downloadFile("/html/"rootDir+currDir+name,'n');
 						clickable = true;
 					}
 				}
@@ -217,7 +217,7 @@ function videoOverlay(url) {
 }
 
 function downloadFile(url,u) {
-	window.location.assign("http://"+window.location.hostname+"/download.php?name="+url+"&u="+u);
+	window.location.assign("http://"+window.location.hostname+":8080/download.php?name="+url+"&u="+u);
 }
 
 function clearTbl() {
@@ -301,4 +301,3 @@ $.when($.ajax({
 	rootDir = JSON.parse(d);
 	listDir(currDir,0);
 });
-
