@@ -61,7 +61,7 @@ function dispDir() {
 		item.onclick = function() {
 			if(clickable == true) {
 				var name = this.childNodes[0].childNodes[0].nodeValue;
-				url = "http://"+window.location.hostname+rootDir+currDir+name;
+				url = window.location.origin+rootDir+currDir+name;
 				if(selected == name) {
 					clickable = false;
 					attr = this.getAttribute("ext");
@@ -185,7 +185,7 @@ function videoOverlay(url) {
 	var overlay = getDefaultOverlay();
 
 	var video = document.createElement("video");
-	video.src = url;
+	video.src = +url;
 	video.controls = true;
 	video.autoplay = true;
 	video.type = "video/mp4";
