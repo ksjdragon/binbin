@@ -297,8 +297,28 @@ canvas {
 	color: #F47922;
 }
 
+#directoryLocWrapper {
+	display: grid;
+	grid-template-columns: auto 6vh;
+	grid-template-rows: 100%;
+}
+
+#directoryLocWrapper div:nth-child(2) {
+	cursor: pointer;
+	grid-column: 2;
+	margin: auto;
+	font-size: 140%;
+	color: white;
+}
+
+#directoryLocWrapper div:nth-child(2):hover {
+	color: #F47922;
+}
+
 #directoryLocation {
 	opacity: 0;
+	grid-column: 1;
+	grid-row 1;
 }
 
 #directoryLocation p {
