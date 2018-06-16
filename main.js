@@ -38,7 +38,7 @@ var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav.
 function getData() {
     $.when($.ajax({
         type : 'POST',
-        url: 'api.floofy.php',
+        url: 'main.php',
         data: {rootdir: 'rootdir'}
     })).done(function(d) {
     	document.getElementsByTagName("body")[0].removeChild(document.getElementsByTagName("pre")[0]);
