@@ -602,7 +602,7 @@ document.addEventListener("keydown", function(event) {
                 break;
         }
     } catch(err) {}
-}
+});
 
 function downloadFile(url, u) {
     window.location.assign("http://" + window.location.hostname + ":8080/html/download.php?name=" + url + "&u=" + u);
