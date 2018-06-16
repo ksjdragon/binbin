@@ -180,7 +180,7 @@ function dispDir() {
                         videoOverlay(url);
                     } else if (attr == "png" || attr == "jpg" || attr == "gif") {
                         imageOverlay(url);
-                    } else if (attr = "mp3" || attr = "ogg") {
+                    } else if (attr == "mp3" || attr == "ogg") {
                     	playFile(url, name);
                         clickable = true;
                     } else {
