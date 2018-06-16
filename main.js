@@ -41,7 +41,6 @@ function getData() {
         url: 'main.php',
         data: {rootdir: 'rootdir'}
     })).done(function(d) {
-    	document.getElementsByTagName("body")[0].removeChild(document.getElementsByTagName("pre")[0]);
         rootDir = d;
         listDir(currDir,0);
     });
