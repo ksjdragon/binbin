@@ -621,7 +621,7 @@ document.addEventListener("keydown", function(event) {
 });
 
 document.querySelectorAll("#directoryLocWrapper div:nth-child(2)")[0].onclick = function() {
-    document.getElementById("copy").value = window.location.origin+window.location.pathname+"#"+currDir.replace(/[\/]+/g,",").replace(/ /g, "_");
+    document.getElementById("copy").value = window.location.origin+window.location.pathname+"#"+currDir.replace(/[\/]+/g,"*").replace(/ /g, "_");
     document.getElementById("copy").select();
     document.execCommand("copy");
 }
@@ -636,7 +636,7 @@ function clearTbl() {
 function checkHash() {
     console.log(window.location.hash);
     if(window.location.hash) {
-        currDir = window.location.hash.replace(/[_]+/g, " ").replace(/[,]+/g,"/").replace("#","");
+        currDir = window.location.hash.replace(/[_]+/g, " ").replace(/[\*]+/g,"/").replace("#","");
     }
     listDir(currDir,0);
     window.location.hash = "";
