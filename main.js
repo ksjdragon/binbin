@@ -19,9 +19,9 @@ var audioSettings = {
 };
 
 var themeColors = { // For reference and for quick changing if need-be.
-	"main": "#070606",
-	"sidebar": "#151313",
-	"highlight": "#63d4ff"
+	"main": "#3e505a",
+	"sidebar": "#2a2e31",
+	"highlight": "#fff"
 };
 
 var navSelect = "myFiles"; // In the future, this can be dynamically updated, but for demonstration purposes, this is set.
@@ -41,7 +41,7 @@ function getData() {
         url: 'main.php',
         data: {rootdir: 'rootdir'}
     })).done(function(d) {
-        rootDir = d;
+        rootDir = JSON.parse(d);
         listDir(currDir,0);
     });
 }
@@ -50,10 +50,10 @@ function listDir(dir, sec) { // Directory is the sub-directory, sec is the secti
     var real = rootDir+dir;
     $.when($.ajax({
         type : 'POST',
-        url: 'api.floofy.php',
+        url: 'main.php',
         data: {getdir : [real, sec]},
     })).done(function(d) {
-        data = d;
+        data = JSON.parse(d);
         if(sec == 0) {
             data[0].splice(0,2);
             data[1].splice(0,3);
@@ -158,6 +158,18 @@ function dispDir() {
             ext.value = "fol";
         } else {
             ext.value = curr.name.substring(curr.name.lastIndexOf(".")+1,curr.name.length).toLowerCase();
+            url = getURI(curr.name);
+            var f = document.createElement("i");
+            var a = document.createElement("div");
+            a.setAttribute("url", url);
+            f.className = "fa fa-files-o transition";
+            a.appendChild(f);
+            a.onclick = function() {
+            	document.getElementById("copy").value = this.getAttribute("url");
+			    document.getElementById("copy").select();
+			    document.execCommand("copy");
+            }
+            item.appendChild(a);
         }
         item.setAttributeNode(ext);
 
@@ -165,9 +177,14 @@ function dispDir() {
             if(clickable == true) {
                 var name = this.childNodes[0].innerText;
                 url = getURI(name);
+                attr = this.getAttribute("ext");
+                if(attr == "fol") {
+                	document.querySelectorAll("#info a")[0].href = "";
+                } else {
+                	document.querySelectorAll("#info a")[0].href = url;
+                }
                 if(selectName == name) {
                     clickable = false;
-                    attr = this.getAttribute("ext");
                     if(attr == "fol") {
                         clearTbl();
                         setTimeout(function() {
@@ -235,7 +252,7 @@ function getDefaultOverlay() {
 
 function getClose() {
     var close = document.createElement("i");
-    close.className = "fa fa-times";
+    close.className = "fa fa-times transition";
     var attr = document.createAttribute("aria-hidden");
     attr.value = "true";
     close.setAttributeNode(attr);
@@ -332,7 +349,7 @@ function updateLocation() {
         ic.className = "fa fa-angle-right";
         if(i !== 0) loc.appendChild(ic);
         if(i === 0) {
-            p.appendChild(document.createTextNode("DOJC Mixtapes"));
+            p.appendChild(document.createTextNode("BinBin"));
         } else {
             p.appendChild(document.createTextNode(subdir[i-1]));
         }
@@ -357,7 +374,7 @@ function updateLocation() {
 
 function getURI(name) {
 	var dirs = (rootDir+currDir+name).split("/");
-	var uri = window.location.origin;
+	var uri = window.location.href.substring(0,window.location.href.length-1);
 	for(var i = 1; i < dirs.length; i++) uri+="/"+encodeURIComponent(dirs[i]);
 	return uri;
 }
@@ -464,7 +481,6 @@ function visualize(url) {
 function playFile(url, name) {
     var audio = document.getElementsByTagName("audio")[0];
     document.querySelectorAll("#playback h2")[0].innerText = name;
-    document.querySelectorAll("#info a")[0].href = url;
     audio.src = url;
     document.querySelectorAll("#speed i")[0].click();
     audio.play();
@@ -603,24 +619,12 @@ document.addEventListener("keydown", function(event) {
     } catch(err) {}
 });
 
-function downloadFile(url, u) {
-    window.location.assign("http://" + window.location.hostname + ":8080/html/download.php?name=" + url + "&u=" + u);
-}
-
 function clearTbl() {
     selected = undefined;
     selectDiv = undefined;
-    table = document.getElementsByClassName("items")[0];
-    table.style.opacity = "0";
-    console.log(table.childNodes.length);
-    document.getElementById("permalink").value = "";
+    document.getElementById("directoryCont").style.opacity = "0";
+    document.getElementById("directoryLocation").style.opacity = "0";
 }
-
-
-/*document.getElementById("permalink").onclick = function() {
-    this.select();
-    document.execCommand("copy");
-};*/
 
 getData();
 createNav();
