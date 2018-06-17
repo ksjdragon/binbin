@@ -14,6 +14,7 @@ var sort = {
 var faIcons = {
 	"fol": "folder",
 	"mp3": "music",
+	"wav": "music",
 	"ogg": "music",
 	"mp4": "video-camera",
 	"zip": "file-zip-o",
@@ -55,6 +56,11 @@ function listDir(dir, sec) { // Directory is the sub-directory, sec is the secti
         data: {getdir : [real, sec]},
     })).done(function(d) {
         data = JSON.parse(d);
+        if(data[0] === null) {
+            currDir = "";
+            listDir(currDir, 0);
+            return;
+        }
         if(sec == 0) {
             data[0].splice(0,2);
             data[1].splice(0,3);
@@ -279,7 +285,6 @@ function videoOverlay(url) {
     video.style.backgroundColor = "black";
 
     video.onloadedmetadata = function() {
-        console.log(video.videoHeight/video.videoWidth);
         if((video.videoHeight/video.videoWidth) > (window.innerHeight/window.innerWidth)) {
             video.style.height = (window.innerHeight * 0.9).toString() + "px";
         } else {
@@ -393,7 +398,7 @@ function clearTbl() {
 
 function getURI(name) {
 	var dirs = (rootDir+currDir+name).split("/");
-	var uri = window.location.href.substring(0,window.location.href.length-1);
+	var uri = window.location.origin;
 	for(var i = 1; i < dirs.length; i++) uri+="/"+encodeURIComponent(dirs[i]);
 	return uri;
 }
@@ -446,6 +451,7 @@ function updateNav(op) { // Updates the sidebar navigation (if naviagation tabs 
 }
 
 function updateLocation() {
+	window.location.hash = currDir.replace(/[\/]+/g,"*").replace(/ /g, "_");
 	var i = document.querySelectorAll("#header div:first-child i")[0];
 	document.getElementById("location").innerText = (currDir === "") ? "BinBin" : currDir.split("/").slice(-2)[0];
 	if(currDir === "" && !i.className.includes("fa-bars")) {
@@ -464,7 +470,6 @@ function updateLocation() {
 }
 
 function checkHash() {
-    console.log(window.location.hash);
     if(window.location.hash) {
         currDir = window.location.hash.replace(/[_]+/g, " ").replace(/[\*]+/g,"/").replace("#","");
     }
@@ -515,7 +520,6 @@ document.querySelectorAll("#header div:first-child i")[0].onclick = function() {
 		that.parentNode.style.backgroundColor = "rgba(0,0,0,0)";
 	}, 300);
 	if(currDir === "") {
-		console.log("asdf");
 		setTimeout(function() {
 			document.getElementById("sidebar").style.left = "0";	
 		}, 10);
@@ -529,6 +533,10 @@ document.querySelectorAll("#header div:first-child i")[0].onclick = function() {
 		}
 		listDir(currDir, 0);
 	}
+}
+
+document.getElementById("sidebar").onclick = function() {
+    event.stopPropagation();
 }
 
 document.querySelectorAll("#header div:last-child i")[0].onclick = function(event) {

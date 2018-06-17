@@ -72,8 +72,21 @@ a {
 	box-shadow: 1px 0px 12px 1px black;
 }
 
-#sidebar div:first-child {
+#sidebar div:nth-child(2) {
 	margin-top: 20%;
+}
+
+#sidebar span {
+	font-size: 110%;
+	padding: 5%;
+	position: absolute;
+	bottom: 0;
+}
+
+#sidebar span p {
+	cursor: pointer;
+	color: #63d4ff;
+	display: inline;
 }
 
 .navi {

@@ -64,6 +64,11 @@ function listDir(dir, sec) { // Directory is the sub-directory, sec is the secti
         data: {getdir : [real, sec]},
     })).done(function(d) {
         data = JSON.parse(d);
+        if(data[0] === null) {
+            currDir = "";
+            listDir(currDir, 0);
+            return;
+        }
         if(sec == 0) {
             data[0].splice(0,2);
             data[1].splice(0,3);
@@ -306,7 +311,6 @@ function videoOverlay(url) {
     video.style.backgroundColor = "black";
 
     video.onloadedmetadata = function() {
-        console.log(video.videoHeight/video.videoWidth);
         if((video.videoHeight/video.videoWidth) > (window.innerHeight/window.innerWidth)) {
             video.style.height = (window.innerHeight * 0.9).toString() + "px";
         } else {
@@ -395,6 +399,7 @@ function imageOverlay(url) {
 }
 
 function updateLocation() {
+    window.location.hash = currDir.replace(/[\/]+/g,"*").replace(/ /g, "_");
     var loc = document.getElementById("directoryLocation");
     while(loc.firstChild) loc.removeChild(loc.firstChild);
     loc.style.opacity = "1";
@@ -431,7 +436,7 @@ function updateLocation() {
 
 function getURI(name) {
 	var dirs = (rootDir+currDir+name).split("/");
-	var uri = window.location.href.substring(0,window.location.href.length-1);
+	var uri = window.location.origin;
 	for(var i = 1; i < dirs.length; i++) uri+="/"+encodeURIComponent(dirs[i]);
 	return uri;
 }
@@ -660,7 +665,6 @@ function clearTbl() {
 }
 
 function checkHash() {
-    console.log(window.location.hash);
     if(window.location.hash) {
         currDir = window.location.hash.replace(/[_]+/g, " ").replace(/[\*]+/g,"/").replace("#","");
     }
