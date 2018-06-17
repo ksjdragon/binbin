@@ -8,10 +8,19 @@ var data, // Stores data from PHP.
 	spectrum = false; // Stores enable spectrum option.
 
 var sort = {
-    "name": 1,
+    "name": -1,
     "date": 1,
     "size": 1,
 };
+
+var faIcons = {
+    "fol": "folder",
+    "mp3": "music",
+    "ogg": "music",
+    "mp4": "video-camera",
+    "zip": "file-zip-o",
+    "other": "file-o" 
+}
 
 var audioSettings = {
     speed: 1,
@@ -174,6 +183,13 @@ function dispDir() {
         }
         item.setAttributeNode(ext);
 
+        var ico = document.createElement("div");
+        ico.className = "fileIcon";
+        var faico = document.createElement("i");
+        faico.className = "fa fa-" + (faIcons[item.getAttribute("ext")] || faIcons["other"]);
+        ico.appendChild(faico);
+        item.appendChild(ico);
+
         item.onclick = function() {
             if(clickable == true) {
                 var name = this.childNodes[0].innerText;
@@ -239,7 +255,7 @@ function createRow() {
 
 function getDefaultOverlay() {
     var overlay = document.createElement("div");
-    overlay.className = "overlay";
+    overlay.className = "overlay transition";
     overlay.style.position = "absolute";
     overlay.style.top = "0";
     overlay.style.left = "0";
@@ -247,6 +263,10 @@ function getDefaultOverlay() {
     overlay.style.minWidth = "100%";
     overlay.style.background = 'rgba(0,0,0,0.8)';
     overlay.style.zIndex = "50";
+    overlay.style.display = "grid";
+    overlay.style.gridTemplateColumns = "1fr";
+    overlay.style.gridTemplateRows = "1fr";
+    overlay.style.opacity = "0";
 
     return overlay;
 }
@@ -259,83 +279,119 @@ function getClose() {
     close.setAttributeNode(attr);
 
     close.onclick = function() {
-        document.getElementsByTagName("body")[0].removeChild(document.getElementsByClassName("overlay")[0]);
-        clickable = true;
+        this.style.color = "#f13838";
+        that = this;
+        document.getElementsByClassName("overlay")[0].opacity = "0";
+        setTimeout(function() {
+            that.style.color = "white";
+            document.getElementsByTagName("body")[0].removeChild(document.getElementsByClassName("overlay")[0]);
+            clickable = true;
+        }, 300);
     };
 
     return close;
-}
-
-function imageOverlay(url) {
-
-    var img = new Image();
-    img.src = url;
-    img.onload = function() {
-        var height = img.height;
-        var width = img.width;
-
-        var overlay = getDefaultOverlay();
-
-        var image = document.createElement("img");
-        image.src = url;
-        image.style.position = "fixed";
-        image.style.top = "50%";
-        image.style.left = "50%";
-
-
-        if (width / height < 16 / 9) {
-            image.style.height = (window.innerHeight * 0.85).toString() + "px";
-            image.style.width = (image.style.height.replace("px", "") * width / height).toString() + "px";
-        } else {
-            image.style.width = (window.innerWidth * 0.85).toString() + "px";
-            image.style.height = (image.style.width.replace("px", "") * height / width).toString() + "px";
-        }
-
-        image.style.marginTop = (image.style.height.replace("px", "") / -2).toString() + "px";
-        image.style.marginLeft = (image.style.width.replace("px", "") / -2).toString() + "px";
-
-        overlay.appendChild(image);
-
-        var close = getClose();
-        overlay.appendChild(close);
-
-        document.getElementsByTagName("body")[0].appendChild(overlay);
-    };
 }
 
 function videoOverlay(url) {
     var overlay = getDefaultOverlay();
 
     var video = document.createElement("video");
-    video.src = +url;
+    video.onclick = function() {event.stopPropagation();}
+    video.src = url;
     video.controls = true;
     video.autoplay = true;
     video.type = "video/mp4";
 
-    document.addEventListener("keydown", function(event) {
-        if ((event || window.event).keyCode === 32) {
-            video.paused ? video.play() : video.pause();
-        }
+    video.style.margin = "auto";
+    video.style.backgroundColor = "black";
 
-        if ((event || window.event).keyCode === 27) {
-            document.getElementsByTagName("body")[0].removeChild(document.getElementsByClassName("overlay")[0]);
-        }
-    });
+    video.onloadedmetadata = function() {
+        console.log(video.videoHeight/video.videoWidth);
+        if((video.videoHeight/video.videoWidth) > (window.innerHeight/window.innerWidth)) {
+            video.style.height = (window.innerHeight * 0.9).toString() + "px";
+        } else {
+            video.style.width = (window.innerWidth * 0.9).toString() + "px";
+        }   
+    }
 
-    video.style.position = "fixed";
-    video.style.top = "50%";
-    video.style.left = "50%";
-    var height = window.innerHeight * 0.4305;
-    video.style.marginTop = (height / -2).toString() + "px";
-    video.style.marginLeft = (height * -16 / 18).toString() + "px";
-    video.style.height = height.toString() + "px";
-    video.style.width = (height * 16 / 9).toString() + "px";
-    overlay.appendChild(video);
+    var div = document.createElement("div");
+    div.style.margin = "auto";
+    div.style.gridRow = "1";
+    div.style.gridColumn = "1";
+    div.appendChild(video);
+    overlay.appendChild(div);
 
     var close = getClose();
     overlay.appendChild(close);
 
     document.getElementsByTagName("body")[0].appendChild(overlay);
+    setTimeout(function() {
+        overlay.style.opacity = "1";
+    }, 10);   
+}
+
+function audioOverlay(url) {
+    var overlay = getDefaultOverlay();
+    var audio = document.createElement("audio");
+    audio.onclick = function() {event.stopPropagation();}
+    audio.src = url;
+    audio.controls = true;
+    audio.autoplay = true;
+
+    audio.style.margin = "auto";
+    audio.style.width = (window.innerWidth * 0.9).toString() + "px";
+
+    var div = document.createElement("div");
+    div.style.margin = "auto";
+    div.style.gridRow = "1";
+    div.style.gridColumn = "1";
+    div.appendChild(audio);
+    overlay.appendChild(div);
+
+    var close = getClose();
+    overlay.appendChild(close);
+
+    document.getElementsByTagName("body")[0].appendChild(overlay);
+    setTimeout(function() {
+        overlay.style.opacity = "1";
+    }, 10);
+}
+
+
+function imageOverlay(url) {
+    var overlay = getDefaultOverlay();
+    var img = new Image();
+    img.src = url;
+    img.style.margin = "auto";
+    
+    var image = document.createElement("img");
+    image.src = url;
+    img.onload = function() {
+        var height = img.height;
+        var width = img.width;
+
+        
+        if((height/width) > (window.innerHeight/window.innerWidth)) {
+            image.style.height = (window.innerHeight * 0.9).toString() + "px";
+        } else {
+            image.style.width = (window.innerWidth * 0.9).toString() + "px";
+        } 
+    };
+
+    var div = document.createElement("div");
+    div.style.margin = "auto";
+    div.style.gridRow = "1";
+    div.style.gridColumn = "1";
+    div.appendChild(image);
+    overlay.appendChild(div);
+
+    var close = getClose();
+    overlay.appendChild(close);
+
+    document.getElementsByTagName("body")[0].appendChild(overlay);
+    setTimeout(function() {
+        overlay.style.opacity = "1";
+    }, 10);
 }
 
 function updateLocation() {
@@ -386,11 +442,6 @@ function createNav() {
         var div = document.createElement("div");
         div.className = "navi transition";
         div.setAttribute("option", navi[i].id);
-        div.onclick = function() {
-            var op = this.getAttribute("option");
-            if (navSelect === op) return;
-            updateMain(op);
-        };
         var ic = document.createElement("i");
         ic.className = "fa fa-" + navi[i].fa;
         ic["aria-hidden"] = true;
@@ -412,7 +463,7 @@ function createNav() {
         	eachSubNav.onclick = function() {
         		var op = this.getAttribute("option");
         		if(subNavSelect === op) return;
-        		updateMain(op);
+        		//updateMain(op);
         	}
         	var p2 = document.createElement("p");
         	p2.appendChild(document.createTextNode(subNav[j].alias));
@@ -430,31 +481,6 @@ function updateNav(op) { // Updates the sidebar navigation (if naviagation tabs 
     oldNav.style.color = "white";
     newNav.style.backgroundColor = themeColors.main;
     newNav.style.color = themeColors.highlight;
-}
-
-function updateMain(op) { // Updates the actual page.
-    updateNav(op);
-    switch(op) { 
-    	case "home":
-    		window.location = "http://discordonlinejammingcentral.com/";
-    		break;
-    	case "forums":
-    		window.location = "http://discordonlinejammingcentral.com/";
-    		break;
-    	case "memberList":
-    		window.location = "http://discordonlinejammingcentral.com/memberlist.php";
-    		break;
-    	case "calendar":
-    		window.location = "http://discordonlinejammingcentral.com/calendar.php";
-    		break;
-    	case "help":
-    		window.location = "http://discordonlinejammingcentral.com/misc.php?action=help";
-    		break;
-    	case "songList":
-    		// Implement if dynamic
-    		break;
-    }
-    navSelect = op;
 }
 
 function sortButtons() {
@@ -644,6 +670,6 @@ function checkHash() {
 
 getData();
 createNav();
-updateMain(navSelect);
+updateNav(navSelect);
 sortButtons();
 audioControls();

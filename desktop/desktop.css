@@ -274,7 +274,7 @@ canvas {
 	cursor: pointer;
 	border-bottom: 1px solid white;
 	background-color: rgba(255,255,255,0.03);
-	grid-template-columns: 60% 25% 10% 5%;
+	grid-template-columns: 4% 56% 25% 10% 5%;
 	grid-template-rows: 100%;
 }
 
@@ -282,12 +282,24 @@ canvas {
 	background-color: rgba(255,255,255,0.1);
 }
 
+.item .name {
+	grid-column: 2;
+}
+
+.item .modified {
+	grid-column: 3;
+}
+
+.item .size: {
+	grid-column: 4;
+}
+
 .item p {
 	pointer-events: none;
 }
 
 .item div {
-	grid-column: 4;
+	grid-column: 5;
 	margin: auto;
 	font-size: 140%;
 	color: white;
@@ -295,6 +307,22 @@ canvas {
 
 .item div:hover {
 	color: #F47922;
+}
+
+.fileIcon {
+	border-radius: 50px;
+	grid-column: 1 !important;
+	grid-row: 1;
+	background-color: rgba(0,0,0,0.4);
+	margin: auto;
+}
+
+.fileIcon .fa {
+	padding: 1.3vh;
+}
+
+.fileIcon .fa:hover {
+	color: #fff;
 }
 
 #directoryLocWrapper {
