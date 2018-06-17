@@ -651,12 +651,6 @@ document.addEventListener("keydown", function(event) {
     } catch(err) {}
 });
 
-document.querySelectorAll("#directoryLocWrapper div:nth-child(2)")[0].onclick = function() {
-    document.getElementById("copy").value = window.location.origin+window.location.pathname+"#"+currDir.replace(/[\/]+/g,"*").replace(/ /g, "_");
-    document.getElementById("copy").select();
-    document.execCommand("copy");
-}
-
 function clearTbl() {
     selected = undefined;
     selectDiv = undefined;
