@@ -16,20 +16,23 @@
 <body>
     <canvas id="canvas" width=window.innerHeight></canvas>
     <div id="formContainer">
-        <h1>BinBin</h1>
-        <form id="login" onsubmit="login(form);">
-            <p>Username:</p>
-            <input class="transition" type="text" name="username">
-            <p>Password:</p>
-            <input class="transition" type="password" name="password">
-        </form>
-        <button class="transition" onclick="login(get('#login'));" >Login</button>
+        <div>
+            <h1>BinBin</h1>
+            <form id="login" onsubmit="login(form);">
+                <p>Username:</p>
+                <input class="transition" type="text" name="username">
+                <p>Password:</p>
+                <input class="transition" type="password" name="password">
+            </form>
+            <button class="transition" onclick="login(get('#login'));" >Login</button>
+        </div>
     </div>
 
 
 </body>
+
 <script>
-    var t = 0
+    var t = 0;
 
     function get(name) {
         ele = document.querySelectorAll(name)

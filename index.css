@@ -26,14 +26,17 @@ body {
 }
 
 #formContainer {
-	height: 50%;
 	margin: auto;
-	padding: 2%;
+	padding: 3vh;
 	background-color: #27262b;
 	color: #fefefe;
-	position: relative;
 	box-shadow: 4px 4px 3px rgba(0, 0, 0, 0.12);
 	border-radius: 2px;
+}
+
+#formContainer div {
+	height: 100%;
+	position: relative;
 }
 
 #formContainer h1 {
@@ -57,7 +60,10 @@ body {
 	background-color: rgba(255,255,255,0.1);
 	color: #fefefe;
 	outline: none;
+}
 
+#formContainer input[type=password] {
+	margin-bottom: 35%;
 }
 
 #formContainer input:hover, #formContainer input:active {
@@ -65,7 +71,7 @@ body {
 }
 
 #formContainer button {
-	width: 80%;
+	width: 100%;
 	font-family: 'Roboto Slab', sans-serif;
 	font-size: 150%;
 	padding: 3%;
@@ -74,7 +80,7 @@ body {
 	border: 0;
 	background-color: #5fab4c;
 	position: absolute;
-	bottom: 8%;
+	bottom: 3%;
 	outline: none;
 }
 
