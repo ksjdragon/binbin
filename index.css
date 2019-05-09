@@ -27,7 +27,7 @@ body {
 
 #formContainer {
 	margin: auto;
-	padding: 3vh;
+	padding: 5%;
 	background-color: #27262b;
 	color: #fefefe;
 	box-shadow: 4px 4px 3px rgba(0, 0, 0, 0.12);
@@ -93,6 +93,6 @@ body {
 }
 
 @keyframes pop {
-	0% { width: 78%; margin: 1%; font-size: 140%; bottom: 7.5%;}
-	100% { width: 80%; margin: 0; font-size: 150%; bottom: 8%;}
+	0% { width: 98%; margin: 1%; font-size: 140%; bottom: 2.5%;}
+	100% { width: 100%; margin: 0; font-size: 150%; bottom: 3%;}
 }
