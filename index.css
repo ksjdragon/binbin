@@ -29,6 +29,7 @@ body {
 
 #formContainer {
 	margin: auto;
+	padding: 2.5em;
 	background-color: #27262b;
 	color: #fefefe;
 	box-shadow: 4px 4px 3px rgba(0, 0, 0, 0.12);
@@ -37,7 +38,6 @@ body {
 
 #formContainer #formSizeWrapper {
 	height: 100%;
-	padding: 10%;
 }
 
 #formContainer #formSizeWrapper div {

@@ -51,16 +51,20 @@
         var el = get("canvas")
         var c = el.getContext("2d")
         var block = 10, space = 2, size = block+space;
-        var w = window.innerWidth, h = window.innerHeight;
-        var x = w/size, y = h/size;
-        var offX = -(w-Math.floor(x)*size)/2, offY = -(h-Math.floor(y)*size)/2;
-        var period = 100, freq = 2*Math.PI/period, step = 1.4, base = 0.05;
-
-        el.width = w, el.height = h;
+        
         var col = randColor();
         var dir = randDir();
 
         function animCanvas(t, col) {
+            // To update when window changes.
+            var w = window.innerWidth, h = window.innerHeight;
+            var x = w/size, y = h/size;
+            var offX = -(w-Math.floor(x)*size)/2, offY = -(h-Math.floor(y)*size)/2;
+            var period = 100, freq = 2*Math.PI/period, step = 1.4, base = 0.05;
+
+            el.width = w, el.height = h;
+
+
             c.fillStyle = "#0e0e0e";
             c.fillRect(0, 0, w, h);
             for(var i = 0; i < x+1; i++) {
