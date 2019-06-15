@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>BinBin</title>
+    <link rel="icon" href="./assets/favicon.ico?v=2">
+    <link rel="stylesheet" href="./css/index.css">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Saira+Condensed:300,400" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:100,300" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://use.fontawesome.com/c8d5486cd8.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width=window.innerHeight></canvas>
+    <div id="formContainer">
+        <div id="formSizeWrapper">
+            <h1>BinBin</h1>
+            <form id="login" onsubmit="login(form);">
+                <p>Username:</p>
+                <input class="transition" type="text" name="username">
+                <p>Password:</p>
+                <input class="transition" type="password" name="password">
+            </form>
+            <div>
+                <button class="transition" onclick="login(get('#login'));" >Login</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="./js/tools.js"></script>
+<script src="./js/alert.js"></script>
+<script src="./js/index.js"></script>
+</html>

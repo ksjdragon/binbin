@@ -1,0 +1,4 @@
+bin/*
+include/*
+__pycache__/*
+key.txt
