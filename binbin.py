@@ -22,8 +22,6 @@ expire_thread = threading.Thread()
 
 @app.route('/')
 def index():
-	print(mongo.db['users'].find_one())
-
 	if 'username' in session:
 		return render_template('desktop.html')
 	else:
@@ -51,7 +49,7 @@ def mydrives():
 		return redirect(url_for('index'))
 
 	drives = get_user(session)['drives']
-	drives = [DRIVES.find_one({'_id': ObjectId(x)}) for x in drives]
+	drives = [DRIVES.find_one({'_id': x}) for x in drives]
 
 	info = {'real': [], 'virtual': []}
 
@@ -257,7 +255,8 @@ def verify_data(method, form, sess):
 		'data': 'malformed data',
 		'permission': 'insufficient permissions',
 		'userexists': 'username already in use',
-		'driveperm': 'the drive is not shared with you'
+		'driveperm': 'the drive is not shared with you',
+		'pathinvalid': 'not a valid path'
 	}
 
 	errors = []
@@ -266,7 +265,6 @@ def verify_data(method, form, sess):
 		has_items = exists(data, ['username', 'password'])
 		if not has_items: errors.append('data')
 		if not sess_is_admin(sess): errors.append('permission')
-		print(sess_is_admin(sess))
 
 		sanitize(data)
 

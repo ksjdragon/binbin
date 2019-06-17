@@ -1,5 +1,8 @@
 bin/*
 include/*
 lib/*
+lib64
 __pycache__/*
+share/*
+pyvenv.cfg
 key.txt

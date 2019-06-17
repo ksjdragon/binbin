@@ -57,7 +57,13 @@ function getDrives() {
 				item = {
 					'id': drives[types[i]][j]['_id'],
 					'alias': drives[types[i]][j]['name'],
-					'fa': 'home'
+					'fa': 'home',
+					'onclick': function() {
+						if(this.id === navSelect) return;
+						updateNav(this.id);
+						currDir = "";
+						listDir(currDir, 0);
+					}
 				}
 				navi[types[i]].push(item)
 			}	
@@ -70,6 +76,7 @@ function getDrives() {
 
 function listDir(dir, sec) { // Directory is the sub-directory, sec is the section of data, if files need to be split up into sections.
 	$.post('./files', {'drive_id': navSelect, 'path': currDir}).done(function(d) {
+		data = [[],[]];
 		for(var i = 0; i < d.length; i++) {
 			if(d[i]['folder']) {
 				data[0].push(d[i]);
@@ -107,8 +114,6 @@ function sortFiles(type, direction) {
 
 	if(direction != "size") sortSection(type, direction, 0);
 	sortSection(type, direction, 1);
-
-	console.log("hi")
 
 	var ico = document.querySelectorAll("#directoryHeader i");
 	for(var i = 0; i < ico.length; i++) {
@@ -364,6 +369,7 @@ function createNav(navi) {
 		var div = document.createElement("div");
 		div.id = navi[i].id;
 		div.className = "navi transition";
+		div.onclick = navi[i]['onclick'];
 		var ic = document.createElement("i");
 		ic.className = "fa fa-" + navi[i].fa;
 		ic["aria-hidden"] = true;
@@ -372,6 +378,7 @@ function createNav(navi) {
 		div.appendChild(ic);
 		div.appendChild(p);
 		side.appendChild(div);
+
 		var subNav = navi[i].subNav;
 		if(!subNav) continue;
 
@@ -399,6 +406,7 @@ function createNav(navi) {
 function updateNav(op) { // Updates the sidebar navigation (if navigation tabs are ever dynamically implemented).
 	var oldNav = document.getElementById(navSelect);
 	var newNav = document.getElementById(op);
+	navSelect = op;
 	oldNav.style.backgroundColor = "rgba(0,0,0,0)";
 	oldNav.style.color = "white";
 	newNav.style.backgroundColor = themeColors.main;
