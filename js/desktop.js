@@ -1,4 +1,7 @@
 var data, // Stores data from PHP.
+	drives,
+	navi = {'real': [], 'virtual': []},
+	navSelect,
 	vis,
 	section = 0,
 	clickable = true,
@@ -34,9 +37,7 @@ var themeColors = { // For reference and for quick changing if need-be.
 	"highlight": "#fff"
 };
 
-var navSelect = "myFiles"; // In the future, this can be dynamically updated, but for demonstration purposes, this is set.
-var subNavSelect = "";
-
+/*
 var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav. 
 	{
 		"id": "myFiles",
@@ -44,9 +45,31 @@ var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav.
 		"fa": "home"
 	},
 ];
+*/
+
+function getDrives() {
+	$.get('./mydrives').done(function(d) {
+		drives = d;
+		navSelect = drives['real'][0]['_id']
+		types = ['real', 'virtual']
+		for(var i = 0; i < types.length; i++) {
+			for(var j = 0; j < drives[types[i]].length; j++) {
+				item = {
+					'id': drives[types[i]][j]['_id'],
+					'alias': drives[types[i]][j]['name'],
+					'fa': 'home'
+				}
+				navi[types[i]].push(item)
+			}	
+		}
+		navLayout();
+		updateNav(navSelect);
+		listDir(currDir, 0);
+	});
+}
 
 function listDir(dir, sec) { // Directory is the sub-directory, sec is the section of data, if files need to be split up into sections.
-    $.post('./files', {'dir': dir}).done(function(d) {
+    $.post('./files', {'drive_id': navSelect, 'path': currDir}).done(function(d) {
     	data = d;
 	  	sortFiles("name", -1);
     	clickable = true;
@@ -363,19 +386,19 @@ function imageOverlay(url) {
 }
 
 function updateLocation() {
-    window.location.hash = currDir.replace(/[\/]+/g,"*").replace(/ /g, "_");
     var loc = document.getElementById("directoryLocation");
     while(loc.firstChild) loc.removeChild(loc.firstChild);
     loc.style.opacity = "1";
     var subdir = currDir.split("/");
-    console.log(subdir)
+    
     for(var i = 0; i < subdir.length; i++) {
         var p = document.createElement("p");
         var ic = document.createElement("i");
         ic.className = "fa fa-angle-right";
         if(i !== 0) loc.appendChild(ic);
         if(i === 0) {
-            p.appendChild(document.createTextNode("BinBin"));
+        	driveName = document.getElementById(navSelect).textContent;
+            p.appendChild(document.createTextNode(driveName));
         } else {
             p.appendChild(document.createTextNode(subdir[i]));
         }
@@ -405,12 +428,27 @@ function getURI(name) {
 	return uri;
 }
 
-function createNav() {
+function navLayout() {
+	createNavHeader("Real Drives");
+	createNav(navi['real']);
+	createNavHeader("Virtual Drives");
+	createNav(navi['virtual']);
+}
+
+function createNavHeader(text) {
+	var side = document.getElementById("sidebarItems");
+	var div = document.createElement("div");
+	div.className = "naviHead transition";
+	div.appendChild(document.createTextNode(text));
+	side.appendChild(div);
+}
+
+function createNav(navi) {
     for (var i = 0; i < navi.length; i++) { // Create navigation tabs.
-        var side = document.getElementById("sidebar");
+        var side = document.getElementById("sidebarItems");
         var div = document.createElement("div");
+        div.id = navi[i].id;
         div.className = "navi transition";
-        div.setAttribute("option", navi[i].id);
         var ic = document.createElement("i");
         ic.className = "fa fa-" + navi[i].fa;
         ic["aria-hidden"] = true;
@@ -443,9 +481,9 @@ function createNav() {
     }
 }
 
-function updateNav(op) { // Updates the sidebar navigation (if naviagation tabs are ever dynamically implemented).
-    var oldNav = document.querySelectorAll("[option=" + navSelect + "]")[0];
-    var newNav = document.querySelectorAll("[option=" + op + "]")[0];
+function updateNav(op) { // Updates the sidebar navigation (if navigation tabs are ever dynamically implemented).
+    var oldNav = document.getElementById(navSelect);
+    var newNav = document.getElementById(op);
     oldNav.style.backgroundColor = "rgba(0,0,0,0)";
     oldNav.style.color = "white";
     newNav.style.backgroundColor = themeColors.main;
@@ -630,8 +668,6 @@ function checkHash() {
     window.location.hash = "";
 }
 
-listDir(currDir,0)
-createNav();
-updateNav(navSelect);
+getDrives();
 sortButtons();
 audioControls();

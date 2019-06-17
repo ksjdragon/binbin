@@ -1,22 +1,25 @@
-import sys, os, time, flask
-from flask import Flask
-from flask import (render_template, url_for, send_from_directory,
-	request, session, redirect)
+import sys, os, time, hashlib, uuid, flask
+from flask import (Flask, render_template, url_for, request, session,
+	send_from_directory, redirect)
+from flask_pymongo import PyMongo, ObjectId
 
-USERS = {'ksjdragon': 'coolbeans'}
-
-PATHS = {'ksjdragon': {
-	'Real': '/var/www/html/binbin',
-	#'Virtual': 'vfiles/ksjdragon'
-	}
+FILTERS = {
+	'name': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' +
+				'0123456789_',
+	'path': ['../', './']
 }
 
 app = Flask(__name__)
-
 app.secret_key = open('key.txt', 'rb').read()
+app.config['MONGO_URI'] = 'mongodb://localhost:27017/BinBinTest'
+mongo = PyMongo(app)
+
+USERS, DRIVES = mongo.db['users'], mongo.db['drives']
 
 @app.route('/')
 def index():
+	print(mongo.db['users'].find_one())
+
 	if 'username' in session:
 		return render_template('desktop.html')
 	else:
@@ -38,16 +41,77 @@ def logout():
 	session.pop('username', None);
 	return redirect(url_for('index'))
 
-@app.route('/files', methods=['POST'])
-def files():
+@app.route('/mydrives')
+def mydrives():
 	if 'username' not in session:
 		return redirect(url_for('index'))
 
-	want = request.form['dir']
-	real_dirs = PATHS[session['username']]['Real']
-	info = dir_info(real_dirs+want, 'real')
-	#vir_dirs = PATHS[session['username']]['Virtual']
+	drives = get_user(session)['drives']
+	drives = [DRIVES.find_one({'_id': ObjectId(x)}) for x in drives]
+
+	info = {'real': [], 'virtual': []}
+
+	for drive in drives:
+		drive_info = {
+			'_id': str(drive['_id']),
+			'name': drive['name'],
+			'public': drive['public'],
+			'shared': drive['shared']
+		}
+		info[drive['type']].append(drive_info)
+
 	return flask.jsonify(info)
+
+@app.route('/files', methods=['POST'])
+def files():
+	check = verify_data('files', request.form, session)
+	if not check[0]: return check[1]
+	form = check[1]
+	
+	info = dir_info(form['path'], form['drive']['type'])
+	return flask.jsonify(info)
+
+
+@app.route('/users/<method>', methods=['POST'])
+def users(method):
+	if 'username' not in session:
+		return redirect(url_for('index'))
+
+	user = USERS.find_one({'username': session['username']})
+
+	if method == 'create':
+		check = verify_data('users.create', request.form, session)
+		if not check[0]: return check[1]
+		form = check[1]
+
+		salt = uuid.uuid4().hex
+		to_hash = (form['password'] + salt).encode('utf-8')
+		user_doc = {
+			'username': form['username'],
+			'password': hashlib.sha512(to_hash).digest(),
+			'salt': salt,
+			'perm_level': 1
+		}
+		USERS.insert_one(user_doc)
+
+	elif method == 'delete':
+		check = verify_data('users.delete', request.form, session)
+		if not check[0]: return check[1]
+		form = check[1]
+		USERS.delete_one({'username': form['username']})
+
+	elif method == 'modify':
+		pass
+	return 'Operation completed'
+
+@app.route('/drive/<drive_id>/<path:path>')
+def drive_path():
+	pass
+
+@app.errorhandler(404)
+def page_not_found(e):
+	return render_template('404.html'), 404
+
 
 # Temporary for development:
 @app.route('/css/<path:path>')
@@ -64,46 +128,179 @@ def assets(path):
 
 # End temporary
 
+def get_user(sess):
+	return USERS.find_one({'username': session['username']})
+
+
 def validate_login(u, p):
-	try:
-		return USERS[u] == p
-	except KeyError:
+	user = USERS.find_one({'username': u})
+	if user == None:
 		return False
+	else:
+		to_hash = (p + user['salt']).encode('utf-8')
+		return hashlib.sha512(to_hash).digest() == user['password']
+
 
 def sizeof_fmt(num, suffix='B'):
     for unit in ['','K','M','G','T','P','E','Z']:
         if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
+            return '%3.1f%s%s' % (num, unit, suffix)
         num /= 1024.0
-    return "%.1f%s%s" % (num, 'Y', suffix)
+    return '%.1f%s%s' % (num, 'Y', suffix)
+
 
 def dir_info(path, t):
 	if t == 'real':
 		full_items = []
 		items = os.listdir(path)
 		for item in items:
-			stats = list(os.stat(path + "/" + item))
-			is_fol = os.path.isdir(path + "/" + item)
+			stats = list(os.stat(path + '/' + item))
+			is_fol = os.path.isdir(path + '/' + item)
 			if is_fol:
 				full_items.append({
-					"folder": True,
-					"name": item,
-					"date": time.strftime('%Y-%m-%d %H:%M:%S', \
+					'folder': True,
+					'name': item,
+					'date': time.strftime('%Y-%m-%d %H:%M:%S', \
 							time.gmtime(stats[8]))
 				})
 			else:
-				
 				full_items.append({
-					"folder": False,
-					"name": item,
-					"date": time.strftime('%Y-%m-%d %H:%M:%S', \
+					'folder': False,
+					'name': item,
+					'date': time.strftime('%Y-%m-%d %H:%M:%S', \
 							time.gmtime(stats[8])),
-					"size": sizeof_fmt(stats[6])
+					'size': sizeof_fmt(stats[6])
 				})
 		return full_items
 
 	elif t == 'virtual':
 		pass
 
+
+def exists(data, need):
+	try:
+		[i in data for i in need].index(False)
+		return False
+	except ValueError:
+		return True
+
+
+def sanitize(d):
+	if 'username' in d:
+		s = ''
+		for c in d['username']: s += c if c in FILTERS['name'] else ''
+		d['username'] = s
+
+	if 'path' in d:
+		for s in FILTERS['path']:
+			if s in d['path']:
+				d['path'] = ''
+
+
+def sess_is_user(sess, name):
+	return sess['username'] == name
+
+
+def sess_is_admin(sess):
+	return get_user(sess)['perm_level'] == 100
+
+
+def copy_dict(form):
+	new_form = {}
+	for k,v in form.items(): new_form[k] = v
+	return new_form
+
+
+def verify_data(method, form, sess):
+	'''
+	Verifies permissions and format and sanitizes user input.
+	For each method, 1) Check for malformed data. 3) Check permissions
+	for operation based on session. 3) Sanitize data. 4) Check 
+	operation specific requirements. 
+	'''
+
+	err_msgs = {
+		'data': 'malformed data',
+		'permission': 'insufficient permissions',
+		'userexists': 'username already in use',
+		'driveperm': 'the drive is not shared with you'
+	}
+
+	errors = []
+	data = copy_dict(form)
+	if method == 'users.create':
+		has_items = exists(data, ['username', 'password'])
+		if not has_items: errors.append('data')
+		if not sess_is_admin(sess): errors.append('permission')
+		print(sess_is_admin(sess))
+
+		sanitize(data)
+
+		try:
+			if USERS.find_one({'username': data['username']}) != None:
+				errors.append('userexists')
+		except KeyError:
+			pass
+
+
+	elif method == 'users.delete':
+		has_items = exists(data, ['username'])
+		if not has_items: errors.append('data')
+		if not sess_is_admin(sess) and \
+			not sess_is_user(sess, data['username']):
+			return errors.append('permission')
+
+		sanitize(data)
+	
+	elif method == 'users.modify':
+		pass
+
+	elif method == 'files':
+		has_items = exists(data, ['drive_id', 'path'])
+		if not has_items: errors.append('data')
+
+		drive = DRIVES.find_one({'_id': ObjectId(data['drive_id'])})
+		if drive == None: errors.append('driveinvalid')
+
+		if not drive['public']:
+			user_id = get_user(sess)['_id']
+			if user_id != drive['owner'] and \
+				user_id not in drive['shared']:
+				errors.append('driveperm')
+
+		sanitize(data)
+
+		if drive['type'] == 'real':
+			if not os.path.exists(drive['path']+data['path']):
+				errors.append('pathinvalid')
+		elif drive['type'] == 'virtual':
+			pass
+
+		data['drive'] = drive
+		data['path'] = drive['path']+data['path']	
+
+	else:
+		raise Exception('Invalid data verification method.')
+
+	if len(errors) == 0: return [True, data]
+
+	msg = 'Error: '
+	for i,e in enumerate(errors):
+		if len(errors) == 1:
+			msg += err_msgs[e][0].upper() + err_msgs[e][1:]
+		elif i == 0:
+			msg += err_msgs[e][0].upper() + err_msgs[e][1:] + ', '
+		elif i == len(errors)-1:
+			msg += 'and ' + err_msgs[e]
+		else:
+			msg += err_msgs[e] + ', '
+	msg += '.'
+
+	if len(errors) <= 2: msg = msg.replace(',', '')
+
+	return [False, msg]
+
+
 if __name__ == '__main__':
 	app.run(debug=True)
+	#create_db()
