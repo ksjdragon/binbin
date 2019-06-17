@@ -6,13 +6,13 @@ function login(form) {
     uEmpty = u === "", pEmpty = p === "";
 
     if(uEmpty && pEmpty) {
-    	alertBox("Please enter a username and password!");
+    	alertBox("Please enter a username and password!", "error");
     	return;
     } else if (uEmpty && !pEmpty) {
-    	alertBox("Please enter a username!");
+    	alertBox("Please enter a username!", "error");
     	return;
     } else if (!uEmpty && pEmpty) {
-    	alertBox("Please enter a password!");
+    	alertBox("Please enter a password!", "error");
     	return;
     }
 

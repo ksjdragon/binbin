@@ -1,6 +1,6 @@
-import sys, os, time, hashlib, uuid, flask
+import sys, os, time, hashlib, uuid, threading, atexit, flask
 from flask import (Flask, render_template, url_for, request, session,
-	send_from_directory, redirect)
+	send_from_directory, send_file, redirect)
 from flask_pymongo import PyMongo, ObjectId
 
 FILTERS = {
@@ -14,7 +14,11 @@ app.secret_key = open('key.txt', 'rb').read()
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/BinBinTest'
 mongo = PyMongo(app)
 
-USERS, DRIVES = mongo.db['users'], mongo.db['drives']
+USERS, DRIVES, LINKS = mongo.db['users'], mongo.db['drives'], \
+	mongo.db['links']
+
+CHECK_PERIOD = 60
+expire_thread = threading.Thread()
 
 @app.route('/')
 def index():
@@ -68,9 +72,39 @@ def files():
 	if not check[0]: return check[1]
 	form = check[1]
 	
-	info = dir_info(form['path'], form['drive']['type'])
-	return flask.jsonify(info)
+	if form['is_fol']:
+		info = dir_info(form['path'], form['drive']['type'])
+		return flask.jsonify(info)
+	else:
+		link = LINKS.insert_one({
+			'path': form['path'],
+			'name': form['path'].split("/")[-1],
+			'shared': [get_user(session)['_id']],
+			'expiry': -1
+		}).inserted_id
+		### QUEUE DELETION
+		return str(link)
+		
 
+@app.route('/d/<_id>')
+def download(_id):
+	if 'username' not in session:
+		return redirect(url_for('index'))
+
+	try:
+		link = LINKS.find_one({'_id': ObjectId(_id)})
+	except:
+		return redirect(url_for('index'))
+
+	if link == None: return redirect(url_for('index'))
+	if get_user(session)['_id'] not in link['shared']:
+		return redirect(url_for('index'))
+	else:
+		if link['expiry'] == -1: 
+			LINKS.delete_one({'_id': ObjectId(_id)})
+		return send_file(link['path'], as_attachment=True,
+			attachment_filename=link['name'])
+	
 
 @app.route('/users/<method>', methods=['POST'])
 def users(method):
@@ -86,13 +120,12 @@ def users(method):
 
 		salt = uuid.uuid4().hex
 		to_hash = (form['password'] + salt).encode('utf-8')
-		user_doc = {
+		USERS.insert_one({
 			'username': form['username'],
 			'password': hashlib.sha512(to_hash).digest(),
 			'salt': salt,
 			'perm_level': 1
-		}
-		USERS.insert_one(user_doc)
+		})
 
 	elif method == 'delete':
 		check = verify_data('users.delete', request.form, session)
@@ -169,7 +202,8 @@ def dir_info(path, t):
 					'name': item,
 					'date': time.strftime('%Y-%m-%d %H:%M:%S', \
 							time.gmtime(stats[8])),
-					'size': sizeof_fmt(stats[6])
+					'size': sizeof_fmt(stats[6]),
+					'real_size': stats[6]
 				})
 		return full_items
 
@@ -271,11 +305,12 @@ def verify_data(method, form, sess):
 		sanitize(data)
 
 		if drive['type'] == 'real':
-			if not os.path.exists(drive['path']+data['path']):
+			if not os.path.exists(drive['path'] + data['path']):
 				errors.append('pathinvalid')
 		elif drive['type'] == 'virtual':
 			pass
 
+		data['is_fol'] = os.path.isdir(drive['path'] + data['path'])
 		data['drive'] = drive
 		data['path'] = drive['path']+data['path']	
 
@@ -300,7 +335,10 @@ def verify_data(method, form, sess):
 
 	return [False, msg]
 
+def manage_expiry():
+	links = LINKS.find()
+	#print(links)
+
 
 if __name__ == '__main__':
 	app.run(debug=True)
-	#create_db()
