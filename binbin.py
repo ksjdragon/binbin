@@ -36,14 +36,14 @@ def login():
 	u, p = request.form['username'], request.form['password']
 	success = validate_login(u, p)
 	if success: 
-		session['username'] = u;
+		session['username'] = u
 		return flask.jsonify(True)
 	else:
 		return flask.jsonify(False)
 
 @app.route('/logout')
 def logout():
-	session.pop('username', None);
+	session.pop('username', None)
 	return redirect(url_for('index'))
 
 @app.route('/mydrives')
@@ -58,7 +58,6 @@ def mydrives():
 	info = {'owned': [], 'shared': []}
 
 	for drive in owned:
-		print(drive['size'])
 		drive_info = {
 			'_id': str(drive['_id']),
 			'name': drive['name'],
@@ -78,7 +77,6 @@ def mydrives():
 		}
 		info['shared'].append(drive_info)
 
-	print(info)
 	return flask.jsonify(info)
 
 @app.route('/files', methods=['POST'])
@@ -240,7 +238,7 @@ def dir_info(path, t, drive_id):
 	elif t == 'virtual':
 		drives = DRIVES.find_one({'_id': drive_id})
 		tree = drives['tree']
-		path = path.replace('.',';').split("/")[1:]
+		path = path.replace('.',':').split("/")[1:]
 		if path != []: 
 			for sub in path: tree = tree[sub]
 
@@ -250,7 +248,7 @@ def dir_info(path, t, drive_id):
 				stats = None
 			else:
 				stats = list(os.stat(drives['path'] + '/' + v))
-			full_items.append(info_dict(k.replace(';','.'), \
+			full_items.append(info_dict(k.replace(':','.'), \
 										stats, is_fol))
 
 	return full_items
@@ -359,7 +357,7 @@ def verify_data(method, form, sess):
 			data['path'] = drive['path']+data['path']
 		elif drive['type'] == 'virtual':
 			tree = drive['tree']
-			path = data['path'].replace('.',';').split('/')[1:]
+			path = data['path'].replace('.',':').split('/')[1:]
 			if path != []:
 				folder, f = path[:-1], path[-1]
 				try:
@@ -416,7 +414,7 @@ def create_drive(method, owner, form=None):
 			'name': 'My Drive',
 			'path': vir_path,
 			'tree': {
-				'Welcome;txt': name
+				'Welcome:txt': name
 			},
 			'type': 'virtual',
 			'size': app.config['DEFAULT_VIRTUAL_SIZE'],
