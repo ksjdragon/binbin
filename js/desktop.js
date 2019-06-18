@@ -1,6 +1,6 @@
 var data = [[],[]], // Stores file directory data.
 	drives,
-	navi = {'real': [], 'virtual': []},
+	navi = {'owned': [], 'shared': []},
 	navSelect,
 	vis,
 	section = 0,
@@ -50,8 +50,8 @@ var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav.
 function getDrives() {
 	$.get('./mydrives').done(function(d) {
 		drives = d;
-		navSelect = drives['real'][0]['_id']
-		types = ['real', 'virtual']
+		navSelect = drives['owned'][0]['_id'] // ADD DEFAULT LATER
+		types = ['owned', 'shared']
 		for(var i = 0; i < types.length; i++) {
 			for(var j = 0; j < drives[types[i]].length; j++) {
 				item = {
@@ -164,12 +164,8 @@ function dispDir() {
 
 			var curr = data[i][j];
 			var name = document.createTextNode(curr.name);
-			var modified = document.createTextNode(curr.date);
-			if(curr.size === undefined) {
-				var size = document.createTextNode("----");
-			} else {
-				var size = document.createTextNode(curr.size);
-			}
+			var modified = document.createTextNode((curr.date || "----"));
+			var size = document.createTextNode((curr.size || "----"))
 
 			item.childNodes[0].appendChild(name);
 			item.childNodes[1].appendChild(modified);
@@ -349,10 +345,10 @@ function getURI(name) {
 }
 
 function navLayout() {
-	createNavHeader("Real Drives");
-	createNav(navi['real']);
-	createNavHeader("Virtual Drives");
-	createNav(navi['virtual']);
+	createNavHeader("My Drives");
+	createNav(navi['owned']);
+	createNavHeader("Shared Drives");
+	createNav(navi['shared']);
 }
 
 function createNavHeader(text) {

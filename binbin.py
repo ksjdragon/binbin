@@ -12,6 +12,9 @@ FILTERS = {
 app = Flask(__name__)
 app.secret_key = open('key.txt', 'rb').read()
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/BinBinTest'
+app.config['VIRTUAL_DB_PATH'] = '/mnt/e/BinBinVirtualDB'
+app.config['DEFAULT_VIRTUAL_SIZE'] = 5368709120
+app.config['WELCOME_MSG'] = 'Welcome to BinBin! This is your drive.'
 mongo = PyMongo(app)
 
 USERS, DRIVES, LINKS = mongo.db['users'], mongo.db['drives'], \
@@ -48,20 +51,34 @@ def mydrives():
 	if 'username' not in session:
 		return redirect(url_for('index'))
 
-	drives = get_user(session)['drives']
-	drives = [DRIVES.find_one({'_id': x}) for x in drives]
+	user_id = get_user(session)['_id']
+	owned = DRIVES.find({'owner': user_id})
+	shared = DRIVES.find({'shared_read': {'$in': [user_id]}})
 
-	info = {'real': [], 'virtual': []}
+	info = {'owned': [], 'shared': []}
 
-	for drive in drives:
+	for drive in owned:
+		print(drive['size'])
 		drive_info = {
 			'_id': str(drive['_id']),
 			'name': drive['name'],
-			'public': drive['public'],
-			'shared': drive['shared']
+			'size': drive['size'],
+			'public_read': drive['public_read'],
+			'public_write': drive['public_write'],
+			'shared_read': [str(i) for i in drive['shared_read']],
+			'shared_write': [str(i) for i in drive['shared_write']]
 		}
-		info[drive['type']].append(drive_info)
+		info['owned'].append(drive_info)
 
+	for drive in shared:
+		drive_info = {
+			'_id': str(drive['_id']),
+			'name': drive['name'],
+			'size': drive['size']
+		}
+		info['shared'].append(drive_info)
+
+	print(info)
 	return flask.jsonify(info)
 
 @app.route('/files', methods=['POST'])
@@ -69,17 +86,29 @@ def files():
 	check = verify_data('files', request.form, session)
 	if not check[0]: return check[1]
 	form = check[1]
-	
-	if form['is_fol']:
-		info = dir_info(form['path'], form['drive']['type'])
+
+	if form['is_fol']:	# If request is a folder.
+		info = dir_info(form['path'], form['drive']['type'], \
+				form['drive']['_id'])
 		return flask.jsonify(info)
-	else:
-		link = LINKS.insert_one({
-			'path': form['path'],
-			'name': form['path'].split("/")[-1],
-			'shared': [get_user(session)['_id']],
-			'expiry': -1
-		}).inserted_id
+	else:		# If request is a file.
+		if form['drive']['type'] == 'real':
+			link = LINKS.insert_one({
+				'path': form['path'],
+				'name': form['path'].split("/")[-1],
+				'shared': [get_user(session)['_id']],
+				'expiry': -1
+			}).inserted_id
+		elif form['drive']['type'] == 'virtual':
+			r_path = form['drive']['path'] + '/' + form['real_file']
+			link = LINKS.insert_one({
+				'path': r_path,
+				'name': form['path'].split("/")[-1],
+				'shared': [get_user(session)['_id']],
+				'expiry': -1
+			}).inserted_id
+		else: 
+			raise Exception("Invalid method for file link creation.")
 		### QUEUE DELETION
 		return str(link)
 		
@@ -118,12 +147,14 @@ def users(method):
 
 		salt = uuid.uuid4().hex
 		to_hash = (form['password'] + salt).encode('utf-8')
-		USERS.insert_one({
+		user = USERS.insert_one({
 			'username': form['username'],
 			'password': hashlib.sha512(to_hash).digest(),
 			'salt': salt,
 			'perm_level': 1
 		})
+
+		create_drive('virtual', user.inserted_id)
 
 	elif method == 'delete':
 		check = verify_data('users.delete', request.form, session)
@@ -180,33 +211,49 @@ def sizeof_fmt(num, suffix='B'):
     return '%.1f%s%s' % (num, 'Y', suffix)
 
 
-def dir_info(path, t):
+def dir_info(path, t, drive_id):
+	def info_dict(item, stats, is_fol):
+		if is_fol:
+			my_item = ({
+				'folder': True,
+				'name': item
+			})
+		else:
+			my_item = ({
+				'folder': False,
+				'name': item,
+				'date': time.strftime('%Y-%m-%d %H:%M:%S', \
+						time.gmtime(stats[8])),
+				'size': sizeof_fmt(stats[6]),
+				'real_size': stats[6]
+			})
+		return my_item
+	full_items = []
+
 	if t == 'real':
-		full_items = []
 		items = os.listdir(path)
 		for item in items:
 			stats = list(os.stat(path + '/' + item))
 			is_fol = os.path.isdir(path + '/' + item)
-			if is_fol:
-				full_items.append({
-					'folder': True,
-					'name': item,
-					'date': time.strftime('%Y-%m-%d %H:%M:%S', \
-							time.gmtime(stats[8]))
-				})
-			else:
-				full_items.append({
-					'folder': False,
-					'name': item,
-					'date': time.strftime('%Y-%m-%d %H:%M:%S', \
-							time.gmtime(stats[8])),
-					'size': sizeof_fmt(stats[6]),
-					'real_size': stats[6]
-				})
-		return full_items
+			full_items.append(info_dict(item, stats, is_fol))
 
 	elif t == 'virtual':
-		pass
+		drives = DRIVES.find_one({'_id': drive_id})
+		tree = drives['tree']
+		path = path.replace('.',';').split("/")[1:]
+		if path != []: 
+			for sub in path: tree = tree[sub]
+
+		for k,v in tree.items():
+			is_fol = type(v).__name__ != 'str'
+			if is_fol: 
+				stats = None
+			else:
+				stats = list(os.stat(drives['path'] + '/' + v))
+			full_items.append(info_dict(k.replace(';','.'), \
+										stats, is_fol))
+
+	return full_items
 
 
 def exists(data, need):
@@ -294,10 +341,10 @@ def verify_data(method, form, sess):
 		drive = DRIVES.find_one({'_id': ObjectId(data['drive_id'])})
 		if drive == None: errors.append('driveinvalid')
 
-		if not drive['public']:
+		if not drive['public_read']:
 			user_id = get_user(sess)['_id']
 			if user_id != drive['owner'] and \
-				user_id not in drive['shared']:
+				user_id not in drive['shared_read']:
 				errors.append('driveperm')
 
 		sanitize(data)
@@ -305,13 +352,29 @@ def verify_data(method, form, sess):
 		if drive['type'] == 'real':
 			if not os.path.exists(drive['path'] + data['path']):
 				errors.append('pathinvalid')
+			data['is_fol'] = os.path.isdir(drive['path'] + \
+												data['path'])
+			
+			# For real drives, the path is kept as the full real path.
+			data['path'] = drive['path']+data['path']
 		elif drive['type'] == 'virtual':
-			pass
+			tree = drive['tree']
+			path = data['path'].replace('.',';').split('/')[1:]
+			if path != []:
+				folder, f = path[:-1], path[-1]
+				try:
+					for sub in folder: tree = tree[sub]
+					data['is_fol'] = type(tree[f]).__name__ != 'str'
+					data['real_file'] = tree[f]
+				except KeyError:
+					errors.append('pathinvalid')
+			else:
+				data['is_fol'] = True
 
-		data['is_fol'] = os.path.isdir(drive['path'] + data['path'])
+			# For virtual drives, the path is just the user request.
+		
 		data['drive'] = drive
-		data['path'] = drive['path']+data['path']	
-
+		
 	else:
 		raise Exception('Invalid data verification method.')
 
@@ -332,6 +395,48 @@ def verify_data(method, form, sess):
 	if len(errors) <= 2: msg = msg.replace(',', '')
 
 	return [False, msg]
+
+
+def create_drive(method, owner, form=None):
+	if method == 'real':
+		DRIVES.insert_one({
+			'name': form['name'],
+			'path': form['path'],
+			'type': 'real',
+			'owner': owner,
+			'public_read': False,
+			'public_write': False,
+			'shared_read': [],
+			'shared_write': []
+		})
+	elif method == 'virtual':
+		vir_path = app.config['VIRTUAL_DB_PATH'] + "/" + str(owner)
+		name = str(uuid.uuid4())+str(uuid.uuid4())
+		DRIVES.insert_one({
+			'name': 'My Drive',
+			'path': vir_path,
+			'tree': {
+				'Welcome;txt': name
+			},
+			'type': 'virtual',
+			'size': app.config['DEFAULT_VIRTUAL_SIZE'],
+			'owner': owner,
+			'public_read': False,
+			'public_write': False,
+			'shared_read': [],
+			'shared_write': []
+		})
+
+		os.mkdir(vir_path)
+		file = open(vir_path+'/'+name, 'w')
+		file.write(app.config['WELCOME_MSG'])
+		file.close()
+
+	else:
+		raise Exception('Invalid drive creation method.')
+
+	return 'Operation completed.'
+
 
 def manage_expiry():
 	links = LINKS.find()

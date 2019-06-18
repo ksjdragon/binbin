@@ -6,3 +6,4 @@ __pycache__/*
 share/*
 pyvenv.cfg
 key.txt
+db.info
