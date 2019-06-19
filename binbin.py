@@ -26,9 +26,13 @@ expire_thread = threading.Thread()
 @app.route('/')
 def index():
 	if 'username' in session:
-		return render_template('desktop.html')
+		return render_template('pre_main.html')
 	else:
 		return render_template('index.html')
+
+@app.route('/main/<method>')
+def main(method):
+	return render_template(method+'.html')
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -109,7 +113,7 @@ def files():
 			raise Exception("Invalid method for file link creation.")
 		### QUEUE DELETION
 		return str(link)
-		
+
 
 @app.route('/d/<_id>')
 def download(_id):
