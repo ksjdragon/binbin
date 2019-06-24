@@ -34,7 +34,6 @@
 		};
 
 		var method = (isMobileDevice()) ? "mobile" : "desktop";
-		console.log(method)
 		get('head').appendChild(element('link', {
 			rel: 'stylesheet',
 			href: `./css/${method}.css`

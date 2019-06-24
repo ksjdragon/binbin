@@ -224,7 +224,7 @@ def dir_info(path, t, drive_id):
 			my_item = ({
 				'folder': False,
 				'name': item,
-				'date': time.strftime('%Y-%m-%d %H:%M:%S', \
+				'date': time.strftime('%Y-%m-%d %H:%M:%S UTC', \
 						time.gmtime(stats[8])),
 				'size': sizeof_fmt(stats[6]),
 				'real_size': stats[6]

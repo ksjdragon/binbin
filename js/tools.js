@@ -88,6 +88,7 @@ function listDir(dir, sec) {
 			if(d[i]['folder']) {
 				data[0].push(d[i]);
 			} else {
+				d[i].date = Date.parse(d[i].date);
 				data[1].push(d[i]);
 			}
 		}
@@ -113,12 +114,7 @@ function sortSection(type, direc, arr) {
 			break;
 		case 'date':
 			sorted.sort(function(a, b){ 
-				a = a.date.replace(",","").split(" ");
-				b = b.date.replace(",","").split(" ");
-				a = Date.parse(a[1] + " " + a[0] + " " + a[2]);
-				b = Date.parse(b[1] + " " + b[0] + " " + b[2]);
-
-				return (a < b) ? direc*1 : direc*-1;
+				return (a.date < b.date) ? direc*1 : direc*-1;
 			});
 			break;
 		case 'size':
@@ -192,4 +188,16 @@ function animFade(type, div) {
 			div.style.display = 'none';
 		}, 300);
 	}
+};
+
+function dateStr(date, type) {
+	type = type || 'all';
+	var str = new Date(date).toLocaleString();
+	if(type === 'all') {
+		return str.replace(',', ' | ');	
+	} else if(type === 'date') {
+		return str.substring(0, str.indexOf(','));
+	} else if(Type === 'time') {
+		return str.substring(str.indexOf(',') + 1, str.length);
+	}	
 };

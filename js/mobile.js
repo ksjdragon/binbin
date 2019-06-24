@@ -81,7 +81,7 @@ function dispDir() {
 			item.appendChild(element('p', {
 				class: 'otherInfo',
 				text: (itemInfo.folder) ? '----' :
-					itemInfo.date.split(' ')[0] + ' | ' + itemInfo.size
+					dateStr(itemInfo.date, 'date') + ' | ' + itemInfo.size
 			}));
 
 			if(!itemInfo.folder) {
