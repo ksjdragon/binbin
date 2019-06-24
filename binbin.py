@@ -1,6 +1,7 @@
-import sys, os, time, hashlib, uuid, threading, atexit, flask
-from flask import (Flask, render_template, url_for, request, session,
-	send_from_directory, send_file, redirect)
+import sys, os, time, hashlib, uuid, threading, atexit, flask, \
+	configparser as cp
+from flask import Flask, render_template, url_for, request, session, \
+	send_from_directory, send_file, redirect
 from flask_pymongo import PyMongo, ObjectId
 
 FILTERS = {
@@ -9,16 +10,26 @@ FILTERS = {
 	'path': ['../', './']
 }
 
-app = Flask(__name__)
-app.secret_key = open('key.txt', 'rb').read()
-app.config['MONGO_URI'] = 'mongodb://localhost:27017/BinBinTest'
-app.config['VIRTUAL_DB_PATH'] = '/mnt/e/BinBinVirtualDB'
-app.config['DEFAULT_VIRTUAL_SIZE'] = 5368709120
-app.config['WELCOME_MSG'] = 'Welcome to BinBin! This is your drive.'
-mongo = PyMongo(app)
+def apply_config():
+	config = cp.ConfigParser()
+	config.read('config.ini')
+	for k,v in config['Settings'].items():
+		k = k.upper()
+		if k == 'KEY_FILE':
+			app.secret_key = open(v, 'rb').read()
+		elif k == 'DEFAULT_VIRTUAL_SIZE':
+			app.config[k] = int(v)
+		else:
+			app.config[k] = v
 
+
+os.chdir(os.path.dirname(__file__))
+
+app = Flask(__name__)
+apply_config()
+mongo = PyMongo(app)
 USERS, DRIVES, LINKS = mongo.db['users'], mongo.db['drives'], \
-	mongo.db['links']
+		mongo.db['links']
 
 CHECK_PERIOD = 60
 expire_thread = threading.Thread()
@@ -443,6 +454,7 @@ def create_drive(method, owner, form=None):
 def manage_expiry():
 	links = LINKS.find()
 	#print(links)
+
 
 
 if __name__ == '__main__':

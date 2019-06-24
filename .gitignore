@@ -7,3 +7,4 @@ share/*
 pyvenv.cfg
 key.txt
 db.info
+config.ini
