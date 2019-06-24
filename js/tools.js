@@ -1,30 +1,30 @@
 var themeColors = { // For reference and for quick changing if need-be.
-	"main": "#3e505a",
-	"sidebar": "#2a2e31",
-	"highlight": "#fff"
+	'main': '#3e505a',
+	'sidebar': '#2a2e31',
+	'highlight': '#fff'
 };
 
 var faIcons = {
-	"fol": "folder",
-	"mp3": "music",
-	"ogg": "music",
-	"mp4": "video-camera",
-	"zip": "file-zip-o",
-	"other": "file-o" 
+	'fol': 'folder',
+	'mp3': 'music',
+	'ogg': 'music',
+	'mp4': 'video-camera',
+	'zip': 'file-zip-o',
+	'other': 'file-o' 
 };
 
 var sort = {	// Default sorting directions.
-	"name": -1,
-	"date": 1,
-	"size": 1,
+	'name': -1,
+	'date': 1,
+	'size': 1,
 };
 
 /*
 var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav. 
 	{
-		"id": "myFiles",
-		"alias": "My Files",
-		"fa": "home"
+		'id': 'myFiles',
+		'alias': 'My Files',
+		'fa': 'home'
 	},
 ];
 */
@@ -61,10 +61,13 @@ function getDrives() {
 					'onclick': function() {
 						if(this.id === navSelect) return;
 						updateNav(this.id);
-						currDir = "";
+						sidebar = get('.closeable');
+						if(sidebar) moveSidebar('close');
+						currDir = '';
 						listDir(currDir, 0);
 					}
 				}
+				drives[item['id']] = item['alias'];
 				navi[types[i]].push(item)
 			}	
 		}
@@ -88,27 +91,27 @@ function listDir(dir, sec) {
 				data[1].push(d[i]);
 			}
 		}
-	  	sortFiles("name", -1);
+	  	sortFiles('name', -1);
 		clickable = true;
 	});
 };
 
 function downloadFile(path) {
-	alertBox("Downloading file...", "msg");
+	alertBox('Downloading file...', 'msg');
 	$.post('./files', {'drive_id': navSelect, 'path': path}).done(function(d) {
-		window.location = "./d/" + d;
+		window.location = './d/' + d;
 	});
 };
 
 function sortSection(type, direc, arr) {
 	var sorted = arr;
 	switch(type) {
-		case "name":
+		case 'name':
 			sorted.sort(function(a, b) { 
 				return (a.name < b.name) ? direc*1 : direc*-1;
 			});
 			break;
-		case "date":
+		case 'date':
 			sorted.sort(function(a, b){ 
 				a = a.date.replace(",","").split(" ");
 				b = b.date.replace(",","").split(" ");
@@ -118,7 +121,7 @@ function sortSection(type, direc, arr) {
 				return (a < b) ? direc*1 : direc*-1;
 			});
 			break;
-		case "size":
+		case 'size':
 			sorted.sort(function(a, b) {
 				return (a['real_size'] < b['real_size']) ? direc*1 : direc*-1;
 			});
@@ -156,9 +159,9 @@ function navLayout() {
 		});
 	};
 
-	createNavHeader("My Drives");
+	createNavHeader('My Drives');
 	createNav(navi['owned']);
-	createNavHeader("Shared Drives");
+	createNavHeader('Shared Drives');
 	createNav(navi['shared']);
 };
 
@@ -166,17 +169,27 @@ function updateNav(op) { // Updates the sidebar navigation.
 	var oldNav = document.getElementById(navSelect);
 	var newNav = document.getElementById(op);
 	navSelect = op;
-	oldNav.style.backgroundColor = "rgba(0,0,0,0)";
-	oldNav.style.color = "white";
+	oldNav.style.backgroundColor = 'rgba(0,0,0,0)';
+	oldNav.style.color = 'white';
 	newNav.style.backgroundColor = themeColors.main;
 	newNav.style.color = themeColors.highlight;
 };
 
 function clearTbl() {
     selectDiv = undefined;
-    get("#directoryCont").style.opacity = "0";
+    get('#directoryCont').style.opacity = '0';
 };
 
-function fileType(ext) {
-	var videos = ['mkv', 'mp4', 'webm'];
-}
+function animFade(type, div) {
+	if(type === 'open') {
+		div.style.display = 'block';
+		setTimeout(function() {
+			div.style.opacity = '1';
+		}, 10);
+	} else if(type === 'close') {
+		div.style.opacity = '0';
+		setTimeout(function() {
+			div.style.display = 'none';
+		}, 300);
+	}
+};

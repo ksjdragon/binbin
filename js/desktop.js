@@ -3,17 +3,18 @@ var navi = {			// Stores data for sidebar navigation.
 	'owned': [], 
 	'shared': []
 };
+var drives = {};		// Stores drive names.
 var navSelect;			// Stores current selected sidebar option.
 var clickable = true;	// Prevents actions being run more than once.
 var selectDiv; 			// Stores selected file or folder div.
-var currDir = "";		// Stores the current directory.
+var currDir = '';		// Stores the current directory.
 
 // FIX THE DATE
 function sortFiles(type, direction) {
 	if(type === 'name') data[0] = sortSection(type, direction, data[0]);
 	data[1] = sortSection(type, direction, data[1]);
 
-	ico = get('#directoryHeader i')
+	ico = get('#directoryHeader i');
 	ico.forEach(function(ele) {
 		ele.style.opacity = '0';
 	});
@@ -22,14 +23,11 @@ function sortFiles(type, direction) {
 		ico.forEach(function(ele) {
 			ele.style.display = 'none';
 		});
-
-		var arrow = get("#directoryHeader ."+type+" i.fa-chevron-" + 
-			((direction < 0) ? "up" : "down"));
-		arrow.style.display = "block"
-		setTimeout(function() {
-			arrow.style.opacity = "1";
-		}, 1);
+		var arrow = (direction < 0) ? 'up' : 'down';
+		arrow = get(`#directoryHeader .${type} i.fa-chevron-${arrow}`);
+		animFade('open', arrow);
 	}, 300);
+
 	try {
 		clearTbl();
 		setTimeout(function() {
@@ -62,8 +60,6 @@ function dispDir() {
 
 	for(var i = 0; i < data.length; i++) {
 		for(var j = 0; j < data[i].length; j++) {
-
-
 			var itemInfo = data[i][j];
 
 			var ext = (itemInfo.folder) ? "fol" : 
@@ -164,13 +160,12 @@ function dispDir() {
 function updateLocation() {
 	var loc = get('#directoryLocation');
 	while(loc.firstChild) loc.removeChild(loc.firstChild);
-	loc.style.opacity = "1";
-	var subdir = currDir.split("/");
+	loc.style.opacity = '1';
+	var subdir = currDir.split('/');
 	
 	for(var i = 0; i < subdir.length; i++) {
 		var p = element('p', {
-			text: (i === 0) ? document.getElementById(navSelect).textContent : 
-				subdir[i],
+			text: (i === 0) ? drives[navSelect] : subdir[i],
 			class: 'subdir transition',
 			style: 'cursor:pointer',
 			onclick: function() {
@@ -178,10 +173,10 @@ function updateLocation() {
 				clearTbl();
 				subdirNum = subdir.indexOf(this.innerText);
 				if(subdirNum === -1) {
-					currDir = "";
+					currDir = '';
 				} else {
 					currDir = subdir.slice(0, subdirNum+1)
-					.reduce(function(a,b) { return a + "/" + b; }) + "/";
+					.reduce(function(a,b) { return a + '/' + b; }) + '/';
 				}
 				listDir(currDir, 0);
 			}
@@ -197,21 +192,21 @@ function updateLocation() {
 };
 
 function sortButtons() {
-	get("#directoryHeader .name").onclick = function() {
+	get('#directoryHeader .name').onclick = function() {
 		sort.name = sort.name * -1;
-		sortFiles("name", sort.name);
+		sortFiles('name', sort.name);
 	};
-	get("#directoryHeader .date").onclick = function() {
+	get('#directoryHeader .date').onclick = function() {
 		sort.date = sort.date * -1;
-		sortFiles("date", sort.date);
+		sortFiles('date', sort.date);
 	};
-	get("#directoryHeader .size").onclick = function() {
+	get('#directoryHeader .size').onclick = function() {
 		sort.size = sort.size * -1;
-		sortFiles("size", sort.size);
+		sortFiles('size', sort.size);
 	};
 };
 
-document.addEventListener("keydown", function(event) {
+document.addEventListener('keydown', function(event) {
 	try {
 		switch((event || window.event).keyCode) {
 			case 13:
@@ -222,13 +217,13 @@ document.addEventListener("keydown", function(event) {
 				break;
 			case 40:
 				if(selectDiv == undefined) {
-					document.getElementById("directoryCont").childNodes[0].click();
+					document.getElementById('directoryCont').childNodes[0].click();
 				} else {
 					selectDiv.nextElementSibling.click();
 				}
 				break;
 			case 8:
-				var subdirs = document.getElementsByClassName("subdir");
+				var subdirs = document.getElementsByClassName('subdir');
 				subdirs[subdirs.length-1].click();
 				break;
 		}

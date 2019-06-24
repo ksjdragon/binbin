@@ -129,6 +129,7 @@ a {
 .navi p {
 	margin: auto 0 auto 0;
 	font-size: 2vh;
+	font-weight: 300;
 	grid-column: 3;
 }
 
