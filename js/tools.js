@@ -268,6 +268,8 @@ function dispDir() {
 					}, 300);
 				} else if(ext.includes('image')) {
 					downloadFile('image', ext, currDir + '/' + name);
+				} else if(ext.includes('audio')) {
+					streamFile('audio', ext, currDir + '/' + name);
 				} else if(ext.includes('video')) {
 					streamFile('video', ext, currDir + '/' + name);
 				} else {
@@ -385,7 +387,8 @@ function overlay(type, src, mime) {
 
 	} else if (type === 'audio') {
 		var audio = element('audio', {
-			style: 'margin: auto',
+			class: 'noSelect',
+			style: 'margin: auto; outline: none',
 			controls: true,
 			autoplay: true,
 			src: src,
