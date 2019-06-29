@@ -5,12 +5,13 @@ var themeColors = { // For reference and for quick changing if need-be.
 };
 
 var faIcons = {
-	'fol': 'folder',
-	'mp3': 'music',
-	'ogg': 'music',
-	'mp4': 'video-camera',
-	'zip': 'file-zip-o',
-	'other': 'file-o' 
+	'fol': 'fas fa-folder',
+	'audio': 'fas fa-file-audio',
+	'video': 'fas fa-file-video',
+	'image': 'fas fa-file-image',
+	'zip': 'fas fa-file-archive',
+	'pdf': 'fas fa-file-pdf',
+	'other': 'fas fa-file' 
 };
 
 var sort = {	// Default sorting directions.
@@ -30,8 +31,8 @@ var navi = [ // Necessary arguments: id, alias, fa | Optional arguments: subnav.
 */
 
 function get(name) {
-    ele = document.querySelectorAll(name)
-    return (ele.length === 1) ? ele[0] : ele;
+	ele = document.querySelectorAll(name)
+	return (ele.length === 1) ? ele[0] : ele;
 };
 
 function element(type, dict) {
@@ -61,8 +62,7 @@ function getDrives() {
 					'onclick': function() {
 						if(this.id === navSelect) return;
 						updateNav(this.id);
-						sidebar = get('.closeable');
-						if(sidebar) moveSidebar('close');
+						if(version === 'mobile') moveSidebar('close');
 						currDir = '';
 						listDir(currDir, 0);
 					}
@@ -74,6 +74,10 @@ function getDrives() {
 		navLayout();
 		updateNav(navSelect);
 		listDir(currDir, 0);
+	})
+	.fail(function(e) {
+		alertBox(e.responseText, 'error');
+		console.log(e.responseText);
 	});
 };
 
@@ -81,7 +85,7 @@ function getDrives() {
 // if files need to be split up into sections.
 
 function listDir(dir, sec) { 
-	$.post('./files', {'drive_id': navSelect, 'path': currDir})
+	$.post('./files/list', {'drive_id': navSelect, 'path': currDir})
 	.done(function(d) {
 		data = [[],[]];
 		for(var i = 0; i < d.length; i++) {
@@ -94,13 +98,43 @@ function listDir(dir, sec) {
 		}
 	  	sortFiles('name', -1);
 		clickable = true;
+	})
+	.fail(function(e) {
+		alertBox(e.responseText, 'error');
+		console.log(e.responseText);
 	});
 };
 
-function downloadFile(path) {
+function downloadFile(type, ext, path) {
 	alertBox('Downloading file...', 'msg');
-	$.post('./files', {'drive_id': navSelect, 'path': path}).done(function(d) {
-		window.location = './d/' + d;
+	$.post('./files/download', {'drive_id': navSelect, 'path': path})
+	.done(function(d) {
+		if(type === 'download') {
+			if(ext.includes('pdf')) {
+				window.open('./d/' + d);
+			} else {
+				window.location = './d/' + d;
+			}
+		} else if(type === 'image') {
+			overlay(type, './d/' + d, ext)
+		}
+		
+	})
+	.fail(function(e) {
+		alertBox(e.responseText, 'error');
+		console.log(e.responseText);
+	});
+};
+
+function streamFile(type, ext, path) {
+	alertBox('Getting file...', 'msg');
+	$.post('./files/stream', {'drive_id': navSelect, 'path': path})
+	.done(function(d) {
+		overlay(type, './d/' + d, ext)
+	})
+	.fail(function(e) {
+		alertBox(e.responseText, 'error');
+		console.log(e.responseText);
 	});
 };
 
@@ -124,7 +158,133 @@ function sortSection(type, direc, arr) {
 			break;
 	}
 	return sorted;
-}
+};
+
+function dispDir() {
+	updateLocation();
+	try {
+		get('#directory').removeChild(get('#directoryCont'));
+	} catch(err) {}
+
+	var cont = element('div', {
+		id: 'directoryCont',
+		class: 'transition',
+		style: 'opacity:0'
+	});
+
+	if(data[0].length === 0 && data[1].length === 0) {
+		cont.appendChild(element('p', {
+			text: 'Nothing here!',
+			style: 'font-weight: 100'
+		}));
+	}
+
+	for(var i = 0; i < data.length; i++) {
+		for(var j = 0; j < data[i].length; j++) {
+			var itemInfo = data[i][j];
+
+			var ext = (itemInfo.folder) ? 'fol' : itemInfo.filetype
+
+			var item = element('div', {
+				class: 'item transition',
+				ext: ext,
+				filename: itemInfo.name
+			});
+
+			item.appendChild(element('p', {
+				class: 'name',
+				text: itemInfo.name
+			}));
+
+			if(version === 'desktop') {
+				item.appendChild(element('p', {
+					class: 'modified',
+					text: (itemInfo.folder) ?  '----' : dateStr(itemInfo.date)
+				}));
+
+				item.appendChild(element('p', {
+					class: 'size',
+					text: itemInfo.size || '----'
+				}));
+			} else if(version === 'mobile') {
+				item.appendChild(element('p', {
+					class: 'otherInfo',
+					text: (itemInfo.folder) ? '----' :
+						dateStr(itemInfo.date, 'date') + ' | ' + itemInfo.size
+				}));
+			}
+
+			if(!itemInfo.folder) {
+				var a = element('div', {
+					onclick: function() {
+						console.log('generating download link');
+						// DO EXPIRY LINKS HERE
+						// update link to get('copy') and copy
+					}
+				});
+
+				a.appendChild(element('i', {
+					class: 'fa fa-files-o transition'
+				}));
+
+				item.appendChild(a);
+			}
+
+			var ico = element('div', {
+				class: 'fileIcon',
+			});
+
+			ico.appendChild(element('i', {
+				class: faIcons[fileType(ext)]
+			}));
+
+			item.appendChild(ico);
+
+			item.onclick = function() {
+				if(!clickable) return;
+				// DO WITH SHIFT AND CONTROL LATER.
+
+				if(this.className.search( 'selectedItem') === -1) {
+					get('.item').forEach(function(ele) {
+						ele.style.backgroundColor = '';
+						ele.className = ele.className.replace(' selectedItem', 
+							'');
+					});
+					this.className += ' selectedItem';
+					this.style.backgroundColor = 'rgba(255,255,255,0.2)';
+					return;
+				}
+
+				// Below executes only after user has clicked twice.
+				var name = this.getAttribute('filename');
+				var ext = this.getAttribute('ext');
+
+				clickable = false;
+				if(ext == 'fol') {
+					clearTbl();
+					setTimeout(function() {
+						currDir += '/' + name;
+						listDir(currDir, 0);
+					}, 300);
+				} else if(ext.includes('image')) {
+					downloadFile('image', ext, currDir + '/' + name);
+				} else if(ext.includes('video')) {
+					streamFile('video', ext, currDir + '/' + name);
+				} else {
+					downloadFile('download', ext, currDir + '/' + name);
+				}
+				clickable = true;
+
+			}
+			cont.appendChild(item);
+		}
+	}
+	
+	get('#directory').appendChild(cont);
+	setTimeout(function() {
+		get('#directoryCont').style.opacity = '1';
+	}, 100);
+};
 
 function navLayout() {
 	function createNavHeader(text) {
@@ -172,9 +332,97 @@ function updateNav(op) { // Updates the sidebar navigation.
 };
 
 function clearTbl() {
-    selectDiv = undefined;
-    get('#directoryCont').style.opacity = '0';
+	selectDiv = undefined;
+	get('#directoryCont').style.opacity = '0';
 };
+
+function overlay(type, src, mime) {
+	function resize(item, vH, vW) {
+		wH = window.innerHeight, wW = window.innerWidth;
+		if((vH/vW) > (wH/wW)) {
+			item.style.height = (wH * 0.9).toString() + "px";
+		} else {
+			item.style.width = (wW * 0.9).toString() + "px";
+		}
+	}
+
+	var div = element('div', {
+		id: 'overlay',
+		class: 'transition',
+		style: `width: 100%;
+				height: 100%;
+				position: absolute; 
+				top: 0; 
+				left: 0;
+				background-color: rgba(0,0,0,0.7);
+				opacity: 0;
+				display: grid;`,
+		onclick: function() {
+			this.style.opacity = '0';
+			that = this;
+			setTimeout(function() {
+				that.parentNode.removeChild(that);
+			}, 300);
+		}
+	});
+
+	var inner;
+
+	if(type === 'image') {
+		var img = element('img', {
+			style: 'margin: auto;',
+			src: src,
+			onclick: function(event) {
+				event.stopPropagation();
+			}
+		});
+
+		img.onload = function() {
+			resize(this, this.height, this.width);
+		};
+
+		inner = img;
+
+	} else if (type === 'audio') {
+		var audio = element('audio', {
+			style: 'margin: auto',
+			controls: true,
+			autoplay: true,
+			src: src,
+			type: mime,
+			onclick: function(event) {
+				event.stopPropagation();
+			}
+		});
+
+		inner = audio;
+
+	} else if (type === 'video') {
+		var vid = element('video', {
+			style: 'margin: auto; background-color: black;',
+			controls: true,
+			autoplay: true,
+			src: src,
+			type: mime,
+			onclick: function(event) {
+				event.stopPropagation();
+			}
+		});
+
+		vid.onloadedmetadata = function() {
+			resize(this, this.videoHeight, this.videoWidth);
+		};
+
+		inner = vid;
+	}
+
+	div.appendChild(inner);
+	get('body').appendChild(div);
+
+	setTimeout(function() {
+		div.style.opacity = '1';
+	}, 10);
+}
 
 function animFade(type, div) {
 	if(type === 'open') {
@@ -201,3 +449,23 @@ function dateStr(date, type) {
 		return str.substring(str.indexOf(',') + 1, str.length);
 	}	
 };
+
+function fileType(ext) {
+	if(ext === 'fol') return 'fol';
+	if(ext.includes('image')) {
+		return 'image';
+	} else if(ext.includes('video')) {
+		return 'video';
+	} else if(ext.includes('pdf')) {
+		return 'pdf';
+	} else if(ext.includes('audio')) {
+		return 'audio';
+	} else if(ext.includes('zip') ||
+				ext.includes('x-rar') ||
+				ext.includes('x-7z-compressed') ||
+				ext.includes('gzip')) {
+		return 'zip';
+	} else {
+		return 'other'
+	}
+}

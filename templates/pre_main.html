@@ -9,7 +9,7 @@
 	<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:100,300" rel="stylesheet">
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-	<script src="https://use.fontawesome.com/c8d5486cd8.js"></script>
+	<script src="https://kit.fontawesome.com/54cafaf1a9.js"></script>
 	<script src="./js/tools.js"></script>
 	<script id="version">
 		scripts = {
@@ -18,7 +18,8 @@
 		};
 
 		function isMobileDevice() {
-		    return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+		    return (typeof window.orientation !== "undefined") ||
+		    	(navigator.userAgent.indexOf('IEMobile') !== -1);
 		};
 
 		function setPage(method, html) {
@@ -34,6 +35,7 @@
 		};
 
 		var method = (isMobileDevice()) ? "mobile" : "desktop";
+		console.log(method)
 		get('head').appendChild(element('link', {
 			rel: 'stylesheet',
 			href: `./css/${method}.css`

@@ -8,8 +8,8 @@ var navSelect;			// Stores current selected sidebar option.
 var clickable = true;	// Prevents actions being run more than once.
 var selectDiv; 			// Stores selected file or folder div.
 var currDir = '';		// Stores the current directory.
+var version = 'desktop';
 
-// FIX THE DATE
 function sortFiles(type, direction) {
 	if(type === 'name') data[0] = sortSection(type, direction, data[0]);
 	data[1] = sortSection(type, direction, data[1]);
@@ -39,124 +39,6 @@ function sortFiles(type, direction) {
 	}
 };
 
-function dispDir() {
-	updateLocation();
-	try {
-		get('#directory').removeChild(get('#directoryCont'));
-	} catch(err) {}
-
-	var cont = element('div', {
-		id: 'directoryCont',
-		class: 'transition',
-		style: 'opacity:0'
-	});
-
-	if(data[0].length === 0 && data[1].length === 0) {
-		cont.appendChild(element('p', {
-			text: 'Nothing here!',
-			style: 'font-weight: 100'
-		}));
-	}
-
-	for(var i = 0; i < data.length; i++) {
-		for(var j = 0; j < data[i].length; j++) {
-			var itemInfo = data[i][j];
-
-			var ext = (itemInfo.folder) ? "fol" : 
-					itemInfo.name.substring(
-						itemInfo.name.lastIndexOf(".") + 1,
-						itemInfo.name.length)
-					.toLowerCase();
-
-			var item = element('div', {
-				class: 'item transition',
-				ext: ext,
-				filename: itemInfo.name
-			});
-
-			item.appendChild(element('p', {
-				class: 'name',
-				text: itemInfo.name
-			}));
-
-			item.appendChild(element('p', {
-				class: 'modified',
-				text: (itemInfo.folder) ?  "----" : dateStr(itemInfo.date)
-			}));
-
-			item.appendChild(element('p', {
-				class: 'size',
-				text: itemInfo.size || "----"
-			}));
-
-			if(!itemInfo.folder) {
-				var a = element('div', {
-					onclick: function() {
-						console.log("generating download link");
-						// DO EXPIRY LINKS HERE
-						// update link to get('copy') and copy
-					}
-				});
-
-				a.appendChild(element('i', {
-					class: 'fa fa-files-o transition'
-				}));
-
-				item.appendChild(a);
-			}
-
-			var ico = element('div', {
-				class: 'fileIcon',
-			});
-
-			ico.appendChild(element('i', {
-				class: `fa fa-${(faIcons[ext] || faIcons["other"])}`
-			}));
-
-			item.appendChild(ico);
-
-			item.onclick = function() {
-				if(!clickable) return;
-				// DO WITH SHIFT AND CONTROL LATER.
-
-				if(this.className.search( 'selectedItem') === -1) {
-					get('.item').forEach(function(ele) {
-						ele.style.backgroundColor = "";
-						ele.className = ele.className.replace(' selectedItem', 
-							'');
-					});
-					this.className += ' selectedItem';
-					this.style.backgroundColor = "rgba(255,255,255,0.2)";
-					return;
-				}
-
-				// Below executes only after user has clicked twice.
-				var name = this.getAttribute('filename');
-				var ext = this.getAttribute('ext');
-
-				clickable = false;
-				if(ext == 'fol') {
-					clearTbl();
-					setTimeout(function() {
-						currDir += '/' + name;
-						listDir(currDir, 0);
-					}, 300);
-				} else {
-					downloadFile(currDir + "/" + name);
-				}
-				clickable = true;
-
-			}
-			cont.appendChild(item);
-		}
-	}
-	
-	get('#directory').appendChild(cont);
-	setTimeout(function() {
-		get('#directoryCont').style.opacity = "1";
-	}, 100);
-};
-
 function updateLocation() {
 	var loc = get('#directoryLocation');
 	while(loc.firstChild) loc.removeChild(loc.firstChild);
@@ -176,7 +58,7 @@ function updateLocation() {
 					currDir = '';
 				} else {
 					currDir = subdir.slice(0, subdirNum+1)
-					.reduce(function(a,b) { return a + '/' + b; }) + '/';
+					.reduce(function(a,b) { return a + '/' + b; });
 				}
 				listDir(currDir, 0);
 			}
@@ -184,7 +66,7 @@ function updateLocation() {
 
 		if(i > 0) {
 			loc.appendChild(element('i', {
-				class: 'fa fa-angle-right'
+				class: 'fas fa-chevron-right'
 			}));
 		}
 		loc.appendChild(p);

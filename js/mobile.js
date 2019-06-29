@@ -8,6 +8,7 @@ var navSelect;			// Stores current selected sidebar option.
 var clickable = true;	// Prevents actions being run more than once.
 var selectDiv; 			// Stores selected file or folder div.
 var currDir = '';		// Stores the current directory.
+var version = 'mobile';
 
 function sortFiles(type, direction) {
 	if(type === 'name') data[0] = sortSection(type, direction, data[0]);

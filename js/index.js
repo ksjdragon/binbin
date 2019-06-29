@@ -3,32 +3,32 @@ var t = 0;
 function login(form) {
     u = form.username.value;
     p = form.password.value;
-    uEmpty = u === "", pEmpty = p === "";
+    uEmpty = u === '', pEmpty = p === '';
 
     if(uEmpty && pEmpty) {
-    	alertBox("Please enter a username and password!", "error");
+    	alertBox('Please enter a username and password!', 'error');
     	return;
     } else if (uEmpty && !pEmpty) {
-    	alertBox("Please enter a username!", "error");
+    	alertBox('Please enter a username!', 'error');
     	return;
     } else if (!uEmpty && pEmpty) {
-    	alertBox("Please enter a password!", "error");
+    	alertBox('Please enter a password!', 'error');
     	return;
     }
 
     data = {username: u, password: p}
-    $.post("./login", data).done(function(data) {
+    $.post('./login', data).done(function(data) {
     	if(data) {
     		location.reload(true);
     	} else {
-    		alertBox("Wrong username or password!");
+    		alertBox('Wrong username or password!');
     	}
     });
 }
 
 function drawCanvas() {
-    var el = get("canvas")
-    var c = el.getContext("2d")
+    var el = get('canvas')
+    var c = el.getContext('2d')
     var block = 10, space = 2, size = block+space;
     var period = 100, freq = 2*Math.PI/period, step = 1.4, base = 0.05;
     
@@ -44,7 +44,7 @@ function drawCanvas() {
         el.width = w, el.height = h;
 
 
-        c.fillStyle = "#0e0e0e";
+        c.fillStyle = '#0e0e0e';
         c.fillRect(0, 0, w, h);
         for(var i = 0; i < x+1; i++) {
             for(var j = 0; j < y+1; j++) {
@@ -87,12 +87,12 @@ function drawCanvas() {
 
 drawCanvas();
 
-inputs = get("input"), button = get("button")
+inputs = get('input'), button = get('button')
 
-inputs[0].addEventListener("keyup", function(e) {
+inputs[0].addEventListener('keyup', function(e) {
 	if(e.keyCode === 13) button.click();
 });
 
-inputs[1].addEventListener("keyup", function(e) {
+inputs[1].addEventListener('keyup', function(e) {
 	if(e.keyCode === 13) button.click();
 });

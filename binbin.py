@@ -1,8 +1,10 @@
 import sys, os, time, hashlib, uuid, threading, atexit, flask, \
-	configparser as cp
+	configparser as cp, magic
 from flask import Flask, render_template, url_for, request, session, \
-	send_from_directory, send_file, redirect
+	send_from_directory, send_file, redirect, abort, Response
 from flask_pymongo import PyMongo, ObjectId
+from apscheduler.schedulers.background import BackgroundScheduler
+from pytz import utc
 
 FILTERS = {
 	'name': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' +
@@ -22,17 +24,31 @@ def apply_config():
 		else:
 			app.config[k] = v
 
+def expire():
+	links = LINKS.find()
+	for l in links:
+		if l['expiry'] < time.time():
+			print(l['expiry'])
+			print(time.time())
+			print("deleted")
+			LINKS.delete_one({'_id': l['_id']})
+
+
 
 os.chdir(os.path.dirname(__file__))
 
 app = Flask(__name__)
 apply_config()
 mongo = PyMongo(app)
+
+scheduler = BackgroundScheduler(timezone=utc)
+scheduler.add_job(expire, 'interval', seconds=20)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
 USERS, DRIVES, LINKS = mongo.db['users'], mongo.db['drives'], \
 		mongo.db['links']
 
-CHECK_PERIOD = 60
-expire_thread = threading.Thread()
 
 @app.route('/')
 def index():
@@ -41,9 +57,11 @@ def index():
 	else:
 		return render_template('index.html')
 
+
 @app.route('/main/<method>')
 def main(method):
 	return render_template(method+'.html')
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -56,10 +74,12 @@ def login():
 	else:
 		return flask.jsonify(False)
 
+
 @app.route('/logout')
 def logout():
 	session.pop('username', None)
 	return redirect(url_for('index'))
+
 
 @app.route('/mydrives')
 def mydrives():
@@ -94,56 +114,89 @@ def mydrives():
 
 	return flask.jsonify(info)
 
-@app.route('/files', methods=['POST'])
-def files():
+
+@app.route('/files/<method>', methods=['POST'])
+def files(method):
+	err_msgs = {
+		'list': 'Error: This directory does not exist.',
+		'zip': 'Error: Folder downloading not supported.'
+	}
 	check = verify_data('files', request.form, session)
-	if not check[0]: return check[1]
+	if not check[0]: return check[1], 400
 	form = check[1]
 
-	if form['is_fol']:	# If request is a folder.
+	if method == 'list':
+		if not form['is_fol']: return err_msgs['list']
 		info = dir_info(form['path'], form['drive']['type'], \
 				form['drive']['_id'])
 		return flask.jsonify(info)
-	else:		# If request is a file.
-		if form['drive']['type'] == 'real':
-			link = LINKS.insert_one({
-				'path': form['path'],
-				'name': form['path'].split("/")[-1],
-				'shared': [get_user(session)['_id']],
-				'expiry': -1
-			}).inserted_id
-		elif form['drive']['type'] == 'virtual':
-			r_path = form['drive']['path'] + '/' + form['real_file']
-			link = LINKS.insert_one({
-				'path': r_path,
-				'name': form['path'].split("/")[-1],
-				'shared': [get_user(session)['_id']],
-				'expiry': -1
-			}).inserted_id
-		else: 
-			raise Exception("Invalid method for file link creation.")
-		### QUEUE DELETION
-		return str(link)
+
+	elif method == 'download' or method == 'stream':
+		if form['is_fol']:
+			return err_msgs['zip']
+		else:
+			link_uuid = str(uuid.uuid4()).replace("-","")
+			if method == 'download':
+				expire = -1
+			else:
+				expire = time.time() + 20*60 # 20 minutes
+
+			if form['drive']['type'] == 'real':
+				link = LINKS.insert_one({
+					'path': form['path'],
+					'uuid': link_uuid,
+					'name': form['path'].split("/")[-1],
+					'shared': [get_user(session)['_id']],\
+					'expiry': expire
+				})
+			elif form['drive']['type'] == 'virtual':
+				r_path = form['drive']['path'] + '/' \
+							+ form['real_file']
+				link = LINKS.insert_one({
+					'path': r_path,
+					'uuid': link_uuid,
+					'name': form['path'].split("/")[-1],
+					'shared': [get_user(session)['_id']],
+					'expiry': expire
+				})
+			else:
+				raise Exception('Drive not real or virtual.')
+			return link_uuid
+	else:
+		return redirect(url_for('index'))
 
 
-@app.route('/d/<_id>')
-def download(_id):
+@app.route('/d/<uuid>')
+def download(uuid):
 	if 'username' not in session:
 		return redirect(url_for('index'))
 
+	uuid = uuid.split('.')[0]
 	try:
-		link = LINKS.find_one({'_id': ObjectId(_id)})
+		link = LINKS.find_one({'uuid': uuid})
 	except:
 		return redirect(url_for('index'))
 
 	if link == None: return redirect(url_for('index'))
 	if get_user(session)['_id'] not in link['shared']:
 		return redirect(url_for('index'))
+	
+	if link['expiry'] == -1: 
+		LINKS.delete_one({'uuid': uuid})
 	else:
-		if link['expiry'] == -1: 
-			LINKS.delete_one({'_id': ObjectId(_id)})
+		LINKS.update_one({'uuid': uuid}, {
+			'$set': {'expiry': time.time() + 20*60}
+			})
+
+	if 'pdf' in magic.from_file(link['path'], mime=True):
+		r = send_file(link['path'])
+		header = 'inline; filename=\"' + link['name'] + '\"'
+		r.headers['Content-Disposition'] = header
+		return r
+	else:
 		return send_file(link['path'], as_attachment=True,
-			attachment_filename=link['name'])
+							attachment_filename=link['name'], 
+							conditional=True)
 	
 
 @app.route('/users/<method>', methods=['POST'])
@@ -155,7 +208,7 @@ def users(method):
 
 	if method == 'create':
 		check = verify_data('users.create', request.form, session)
-		if not check[0]: return check[1]
+		if not check[0]: return check[1], 400
 		form = check[1]
 
 		salt = uuid.uuid4().hex
@@ -171,7 +224,7 @@ def users(method):
 
 	elif method == 'delete':
 		check = verify_data('users.delete', request.form, session)
-		if not check[0]: return check[1]
+		if not check[0]: return check[1], 400
 		form = check[1]
 		USERS.delete_one({'username': form['username']})
 
@@ -182,6 +235,7 @@ def users(method):
 @app.route('/drive/<drive_id>/<path:path>')
 def drive_path():
 	pass
+
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -201,6 +255,10 @@ def js(path):
 def assets(path):
 	return send_from_directory('assets', path)
 
+@app.route('/test/<path:path>')
+def test(path):
+	return send_from_directory('test', path)
+
 # End temporary
 
 def get_user(sess):
@@ -217,15 +275,15 @@ def validate_login(u, p):
 
 
 def sizeof_fmt(num, suffix='B'):
-    for unit in ['','K','M','G','T','P','E','Z']:
-        if abs(num) < 1024.0:
-            return '%3.1f%s%s' % (num, unit, suffix)
-        num /= 1024.0
-    return '%.1f%s%s' % (num, 'Y', suffix)
+	for unit in ['','K','M','G','T','P','E','Z']:
+		if abs(num) < 1024.0:
+			return '%3.1f%s%s' % (num, unit, suffix)
+		num /= 1024.0
+	return '%.1f%s%s' % (num, 'Y', suffix)
 
 
 def dir_info(path, t, drive_id):
-	def info_dict(item, stats, is_fol):
+	def info_dict(item, stats, is_fol, filetype):
 		if is_fol:
 			my_item = ({
 				'folder': True,
@@ -233,12 +291,12 @@ def dir_info(path, t, drive_id):
 			})
 		else:
 			my_item = ({
-				'folder': False,
 				'name': item,
 				'date': time.strftime('%Y-%m-%d %H:%M:%S UTC', \
 						time.gmtime(stats[8])),
 				'size': sizeof_fmt(stats[6]),
-				'real_size': stats[6]
+				'real_size': stats[6],
+				'filetype': filetype
 			})
 		return my_item
 	full_items = []
@@ -246,9 +304,15 @@ def dir_info(path, t, drive_id):
 	if t == 'real':
 		items = os.listdir(path)
 		for item in items:
-			stats = list(os.stat(path + '/' + item))
-			is_fol = os.path.isdir(path + '/' + item)
-			full_items.append(info_dict(item, stats, is_fol))
+			f_path = path + '/' + item
+			stats = list(os.stat(f_path))
+			is_fol = os.path.isdir(f_path)
+			if not is_fol:
+				kind = magic.from_file(f_path, mime=True)
+			else:
+				kind = None
+
+			full_items.append(info_dict(item, stats, is_fol, kind))
 
 	elif t == 'virtual':
 		drives = DRIVES.find_one({'_id': drive_id})
@@ -260,11 +324,14 @@ def dir_info(path, t, drive_id):
 		for k,v in tree.items():
 			is_fol = type(v).__name__ != 'str'
 			if is_fol: 
-				stats = None
+				stats, kind = None, None
 			else:
 				stats = list(os.stat(drives['path'] + '/' + v))
+				kind = magic.from_file(drives['path'] + '/' + v, 
+						mime=True)
+
 			full_items.append(info_dict(k.replace(':','.'), \
-										stats, is_fol))
+										stats, is_fol, kind))
 
 	return full_items
 
@@ -449,12 +516,6 @@ def create_drive(method, owner, form=None):
 		raise Exception('Invalid drive creation method.')
 
 	return 'Operation completed.'
-
-
-def manage_expiry():
-	links = LINKS.find()
-	#print(links)
-
 
 
 if __name__ == '__main__':

@@ -332,11 +332,11 @@ canvas {
 	margin: auto;
 }
 
-.fileIcon .fa {
+.fileIcon i {
 	padding: .6em;
 }
 
-.fileIcon .fa:hover {
+.fileIcon i:hover {
 	color: #fff;
 }
 
@@ -369,10 +369,6 @@ canvas {
 	margin: 1vh 1.5vh 1vh 1.5vh;
 	border-radius: 5px;
 	display: inline-block;
-}
-
-#directoryLocation i {
-	font-size: 150%;
 }
 
 .subdir:hover {
