@@ -200,7 +200,7 @@ def download(uuid):
 
 
 @app.route('/changepass', methods=['POST'])
-def changepass(method):
+def changepass():
 	## FIX LATER
 	check = verify_data('changepass', request.form, session)
 	if not check[0]: return check[1], 400
@@ -214,6 +214,7 @@ def changepass(method):
 			'salt': salt
 		}
 	})
+	return 'Operation completed'
 
 
 @app.route('/users/<method>', methods=['POST'])
