@@ -199,6 +199,23 @@ def download(uuid):
 							conditional=True)
 
 
+@app.route('/changepass', methods=['POST'])
+def changepass(method):
+	## FIX LATER
+	check = verify_data('changepass', request.form, session)
+	if not check[0]: return check[1], 400
+	form = check[1]
+
+	salt = uuid.uuid4().hex
+	to_hash = (form['password'] + salt).encode('utf-8')
+	USERS.update_one({'username': form['username']},
+		{'$set': {
+			'password': hashlib.sha512(to_hash).digest(),
+			'salt': salt
+		}
+	})
+
+
 @app.route('/users/<method>', methods=['POST'])
 def users(method):
 	if 'username' not in session:
@@ -220,23 +237,6 @@ def users(method):
 		})
 
 		create_drive('virtual', user.inserted_id)
-
-
-	elif method == 'changepass':
-		## FIX LATER
-		check = verify_data('users.changepass', request.form, session)
-		if not check[0]: return check[1], 400
-		form = check[1]
-
-		salt = uuid.uuid4().hex
-		to_hash = (form['password'] + salt).encode('utf-8')
-		user = USERS.update_one(
-			{'username': form['username']},
-			{'$set': {
-				'password': hashlib.sha512(to_hash).digest(),
-				'salt': salt
-			}
-		})
 		
 
 	elif method == 'delete':
@@ -420,19 +420,6 @@ def verify_data(method, form, sess):
 		except KeyError:
 			pass
 
-	elif method == 'users.changepass':
-		### REIMPLEMENT LATER
-		has_items = exists(data, ['username', 'password'])
-		if not has_items: errors.append('data')
-
-		sanitize(data)
-
-		try:
-			if USERS.find_one({'username': data['username']}) == None:
-				errors.append('usernotexist')
-		except KeyError:
-			pass
-
 	elif method == 'users.delete':
 		has_items = exists(data, ['username'])
 		if not has_items: errors.append('data')
@@ -444,6 +431,19 @@ def verify_data(method, form, sess):
 
 	elif method == 'users.modify':
 		pass
+
+	elif method == 'changepass':
+		### REIMPLEMENT LATER
+		has_items = exists(data, ['username', 'password'])
+		if not has_items: errors.append('data')
+
+		sanitize(data)
+
+		try:
+			if USERS.find_one({'username': data['username']}) == None:
+				errors.append('usernotexist')
+		except KeyError:
+			pass
 
 	elif method == 'files':
 		has_items = exists(data, ['drive_id', 'path'])
