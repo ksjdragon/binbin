@@ -68,7 +68,7 @@ def login():
 	error = None
 	u, p = request.form['username'], request.form['password']
 	success = validate_login(u, p)
-	if success: 
+	if success:
 		session['username'] = u
 		return flask.jsonify(True)
 	else:
@@ -106,7 +106,7 @@ def mydrives():
 
 	for drive in shared:
 		drive_info = {
-			'_id': str(drive['_id']),
+ 			'_id': str(drive['_id']),
 			'name': drive['name'],
 			'size': drive['size']
 		}
@@ -180,8 +180,8 @@ def download(uuid):
 	if link == None: return redirect(url_for('index'))
 	if get_user(session)['_id'] not in link['shared']:
 		return redirect(url_for('index'))
-	
-	if link['expiry'] == -1: 
+
+	if link['expiry'] == -1:
 		LINKS.delete_one({'uuid': uuid})
 	else:
 		LINKS.update_one({'uuid': uuid}, {
@@ -195,9 +195,9 @@ def download(uuid):
 		return r
 	else:
 		return send_file(link['path'], as_attachment=True,
-							attachment_filename=link['name'], 
+							attachment_filename=link['name'],
 							conditional=True)
-	
+
 
 @app.route('/users/<method>', methods=['POST'])
 def users(method):
@@ -217,10 +217,27 @@ def users(method):
 			'username': form['username'],
 			'password': hashlib.sha512(to_hash).digest(),
 			'salt': salt,
-			'perm_level': 1
 		})
 
 		create_drive('virtual', user.inserted_id)
+
+
+	elif method == 'changepass':
+		## FIX LATER
+		check = verify_data('users.changepass', request.form, session)
+		if not check[0]: return check[1], 400
+		form = check[1]
+
+		salt = uuid.uuid4().hex
+		to_hash = (form['password'] + salt).encode('utf-8')
+		user = USERS.update_one(
+			{'username': form['username']}, 
+			{
+				'password': hashlib.sha512(to_hash).digest(),
+				'salt': salt
+			}
+		)
+		
 
 	elif method == 'delete':
 		check = verify_data('users.delete', request.form, session)
@@ -231,6 +248,7 @@ def users(method):
 	elif method == 'modify':
 		pass
 	return 'Operation completed'
+
 
 @app.route('/drive/<drive_id>/<path:path>')
 def drive_path():
@@ -318,16 +336,16 @@ def dir_info(path, t, drive_id):
 		drives = DRIVES.find_one({'_id': drive_id})
 		tree = drives['tree']
 		path = path.replace('.',':').split("/")[1:]
-		if path != []: 
+		if path != []:
 			for sub in path: tree = tree[sub]
 
 		for k,v in tree.items():
 			is_fol = type(v).__name__ != 'str'
-			if is_fol: 
+			if is_fol:
 				stats, kind = None, None
 			else:
 				stats = list(os.stat(drives['path'] + '/' + v))
-				kind = magic.from_file(drives['path'] + '/' + v, 
+				kind = magic.from_file(drives['path'] + '/' + v,
 						mime=True)
 
 			full_items.append(info_dict(k.replace(':','.'), \
@@ -374,14 +392,15 @@ def verify_data(method, form, sess):
 	'''
 	Verifies permissions and format and sanitizes user input.
 	For each method, 1) Check for malformed data. 3) Check permissions
-	for operation based on session. 3) Sanitize data. 4) Check 
-	operation specific requirements. 
+	for operation based on session. 3) Sanitize data. 4) Check
+	operation specific requirements.
 	'''
 
 	err_msgs = {
 		'data': 'malformed data',
 		'permission': 'insufficient permissions',
 		'userexists': 'username already in use',
+		'usernotexist': 'user does not exist',
 		'driveperm': 'the drive is not shared with you',
 		'pathinvalid': 'not a valid path'
 	}
@@ -401,6 +420,18 @@ def verify_data(method, form, sess):
 		except KeyError:
 			pass
 
+	elif method == 'users.changepass':
+		### REIMPLEMENT LATER
+		has_items = exists(data, ['username', 'password'])
+		if not has_items: errors.append('data')
+
+		sanitize(data)
+
+		try:
+			if USERS.find_one({'username': data['username']}) == None:
+				errors.append('usernotexist')
+		except KeyError:
+			pass
 
 	elif method == 'users.delete':
 		has_items = exists(data, ['username'])
@@ -410,7 +441,7 @@ def verify_data(method, form, sess):
 			return errors.append('permission')
 
 		sanitize(data)
-	
+
 	elif method == 'users.modify':
 		pass
 
@@ -434,7 +465,7 @@ def verify_data(method, form, sess):
 				errors.append('pathinvalid')
 			data['is_fol'] = os.path.isdir(drive['path'] + \
 												data['path'])
-			
+
 			# For real drives, the path is kept as the full real path.
 			data['path'] = drive['path']+data['path']
 		elif drive['type'] == 'virtual':
@@ -452,9 +483,8 @@ def verify_data(method, form, sess):
 				data['is_fol'] = True
 
 			# For virtual drives, the path is just the user request.
-		
+
 		data['drive'] = drive
-		
 	else:
 		raise Exception('Invalid data verification method.')
 
