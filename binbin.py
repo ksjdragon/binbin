@@ -231,12 +231,12 @@ def users(method):
 		salt = uuid.uuid4().hex
 		to_hash = (form['password'] + salt).encode('utf-8')
 		user = USERS.update_one(
-			{'username': form['username']}, 
-			{
+			{'username': form['username']},
+			{'$set': {
 				'password': hashlib.sha512(to_hash).digest(),
 				'salt': salt
 			}
-		)
+		})
 		
 
 	elif method == 'delete':

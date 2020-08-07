@@ -58,6 +58,7 @@ body {
 #formContainer input {
 	margin-bottom: 10%;
 	padding: 5%;
+	width: 90%;
 	border: none;
 	font-size: 130%;
 	font-family: 'Roboto Slab', sans-serif;
